@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "name": "Double Klondike",
+  "summary": "Build the foundations up in suit from ace to king. Build tableau columns down in alternating colors. Empty columns take kings. Draw one card from the stock and recycle the waste as needed.",
+  "artwork": "poker",
+  "rules": {
+    "type": "solitaire",
+    "suits": [
+      "clubs",
+      "diamonds",
+      "hearts",
+      "spades"
+    ],
+    "copies": 2,
+    "deal": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "face_up": "top",
+    "build": "alternate",
+    "empty": "king",
+    "groups": "in_order",
+    "stock": {
+      "mode": "waste",
+      "draw": 1,
+      "recycle": true
+    },
+    "foundations": {
+      "mode": "ace",
+      "piles": 8
+    },
+    "return_from_foundation": true
+  }
+}

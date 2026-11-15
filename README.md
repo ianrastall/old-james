@@ -1,18 +1,46 @@
 # Old James
 
-Old James is a card-game project for playing with language-model opponents.
+Old James is a Windows card table for playing solitaire or playing against a
+local language model. Open **Old James** from Start and choose a game. Click
+an eligible card, then a marked destination or an action. In trick-taking
+games, click an eligible card to play it. **Rules** shows the selected variant.
 
-## Planned games
+## Games
 
-- **Multiplayer** — Bridge, Poker, Hearts, Spades, Pinochle, Euchre, Rummy, and
-  Gin Rummy (Gin). Poker and Rummy each need a named variant for their first
-  ruleset.
+- **Multiplayer** — Contract Bridge with raw duplicate scoring, heads-up
+  fixed-limit Texas Hold'em with play chips, Hearts, Spades, single-deck
+  Pinochle, Euchre, two-player Basic Rummy, and Gin Rummy.
 - **Solitaire** — Klondike, Double Klondike, Diplomat, Spider One Suit,
-  Spider Two Suits, Grandfather Clock, and FreeCell.
+  Spider Two Suits, Grandfather's Clock, and FreeCell. Both Klondike games
+  use draw one and allow unlimited redeals.
 
-Rulesets describe deck composition, visibility, table spaces, legal actions,
-and scoring. Card instances have their own identities so Pinochle, Double
-Klondike, and Spider can reuse one face image for multiple cards in play.
+The **Settings** dialog accepts a local GGUF model for multiplayer. The
+installer bundles llama.cpp. Each opponent receives its own visible position,
+the selected rules, public play, and the legal actions for its current turn.
+If inference pauses, use **Resume opponent** to retry. Solitaire does not
+load a model and supports undo. Active games are held in memory.
+
+### Add a game
+
+Open **Game → Open ruleset folder**, place a version 1 JSON file there, then
+select **Game → Reload games**. Use the [bundled rulesets](rulesets/) as
+examples. The engine validates supported rules and fields when it loads each
+file. The solitaire family lets rulesets configure deck composition, the
+deal, column building, movable groups, stock, cells, and foundations.
+Multiplayer files select a supported rules family and its parameters. A
+mechanic outside those families needs a new engine primitive.
+
+## Build and install
+
+Build on Windows 11 24H2 or later with .NET SDK 10.0.113, Rust with the x64
+MSVC build tools, Inno Setup 6, and the sibling `jupiter-ui` repository.
+Run `pwsh -File build.ps1` to build `dist/Old-James-Setup.exe`. The installer
+includes the app runtimes and can seed the local GGUF path via
+`/MODELFILE="D:\path\to\model.gguf"`. Settings and custom rulesets are stored
+under `%LOCALAPPDATA%\Old James Cards`.
+
+Run `cargo test --locked --manifest-path core/Cargo.toml` for the rules engine
+checks. The WinUI build runs the Jupiter style check automatically.
 
 ## Card artwork
 

@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "name": "Pinochle · Single Deck",
+  "summary": "Four seats in partnerships. The 48-card deck has two of each A, 10, K, Q, J, 9. Bid 25–60 or pass out of the auction; dealer takes 25 if nobody bids. The winner names trump, receives four cards from partner and returns four. Meld is shown and counted automatically. Follow suit and beat the current winner if possible; if void, trump and overtrump if possible. First of equal cards wins. A, 10 and K count one each; last trick adds one. A side must take a trick to keep its meld. A missed contract loses the bid. Play to 150.",
+  "artwork": "bridge",
+  "rules": { "type": "partnership", "mode": "pinochle", "target": 150 }
+}

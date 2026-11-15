@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "name": "Contract Bridge",
+  "summary": "Four seats, North–South against East–West. The auction accepts higher contracts, pass, double and redouble. Three passes end the auction after a bid; four initial passes pass out the deal. The opening lead reveals dummy, whose cards the declarer plays. Follow suit; highest trump or highest card of led suit wins. Each board uses duplicate contract scoring and rotating vulnerability. Compete for total raw points across boards.",
+  "artwork": "bridge",
+  "rules": {
+    "type": "trick",
+    "mode": "bridge"
+  }
+}

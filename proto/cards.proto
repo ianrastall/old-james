@@ -1,0 +1,66 @@
+syntax = "proto3";
+package old_james.cards;
+option csharp_namespace = "OldJames.Cards.Protocol";
+
+message Request {
+  uint64 id = 1;
+  oneof command {
+    Start start = 2;
+    Apply apply = 3;
+    View view = 4;
+    Undo undo = 5;
+    Inspect inspect = 6;
+  }
+}
+message Start { string ruleset = 1; uint64 seed = 2; }
+message Apply { uint64 revision = 1; uint32 action = 2; bool agent = 3; }
+message View { bool agent = 1; }
+message Undo {}
+message Inspect { string ruleset = 1; }
+
+message Reply {
+  uint64 id = 1;
+  string error = 2;
+  Table table = 3;
+  GameInfo game = 4;
+}
+message GameInfo {
+  string name = 1;
+  string rules = 2;
+  bool multiplayer = 3;
+  string artwork = 4;
+}
+message Table {
+  uint64 revision = 1;
+  repeated Zone zones = 2;
+  repeated Action actions = 3;
+  string status = 4;
+  bool agent_turn = 5;
+  bool can_undo = 6;
+  bool finished = 7;
+  string player_view = 8;
+  repeated string events = 9;
+}
+message Zone {
+  uint32 id = 1;
+  uint32 row = 2;
+  string label = 3;
+  enum Layout { PILE = 0; COLUMN = 1; HAND = 2; }
+  Layout layout = 4;
+  repeated Card cards = 5;
+  uint32 count = 6;
+}
+message Card {
+  uint32 id = 1;
+  string suit = 2;
+  string rank = 3;
+  string name = 4;
+  bool hidden = 5;
+}
+message Action {
+  uint32 id = 1;
+  string label = 2;
+  uint32 source = 3;
+  uint32 card = 4;
+  uint32 destination = 5;
+}

@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "name": "FreeCell",
+  "summary": "Build the foundations up in suit. Build down in alternating colors. Each free cell holds one card. You can move a sequence if there are enough free cells and empty columns to move it one card at a time.",
+  "artwork": "poker",
+  "rules": {
+    "type": "solitaire",
+    "suits": [
+      "clubs",
+      "diamonds",
+      "hearts",
+      "spades"
+    ],
+    "copies": 1,
+    "deal": [
+      7,
+      7,
+      7,
+      7,
+      6,
+      6,
+      6,
+      6
+    ],
+    "face_up": "all",
+    "build": "alternate",
+    "empty": "any",
+    "groups": "free_cell",
+    "stock": {
+      "mode": "none"
+    },
+    "foundations": {
+      "mode": "ace",
+      "piles": 4
+    },
+    "cells": 4
+  }
+}

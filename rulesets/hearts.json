@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "name": "Hearts",
+  "summary": "Four seats, each for themselves. Pass three cards left, right, across, then hold on successive deals. Lead the two of clubs. Follow suit when possible. On trick one avoid points unless forced. A heart or queen of spades breaks hearts. Hearts count one and the queen of spades thirteen; shooting the moon gives each opponent 26. Lowest score wins at 100.",
+  "artwork": "bridge",
+  "rules": {
+    "type": "trick",
+    "mode": "hearts",
+    "target": 100
+  }
+}

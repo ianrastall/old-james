@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "name": "Texas Hold’em · Fixed Limit",
+  "summary": "Heads-up fixed-limit Hold’em with play chips. The button posts the small blind and acts first preflop. The other player acts first after the flop. Use the best five of seven cards. Bets double on turn and river. Four wagers maximum per street. Equal hands split the pot. A match ends when a player runs out of chips.",
+  "artwork": "poker",
+  "rules": {
+    "type": "holdem",
+    "stack": 500,
+    "small_blind": 5,
+    "max_wagers": 4
+  }
+}

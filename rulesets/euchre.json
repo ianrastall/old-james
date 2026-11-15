@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "name": "Euchre",
+  "summary": "Four seats in partnerships, five cards each, 24-card deck. Order up the upcard suit or pass. If all pass, name a different suit or pass; two rounds of passes redeal. The maker may play alone. The jack of trump and the jack of the same color are the highest trumps. Follow effective suit if possible. Makers earn 1 for three or four tricks, 2 for a sweep, or 4 for a lone sweep. Defenders get 2 for a euchre. Play to 10.",
+  "artwork": "bridge",
+  "rules": { "type": "partnership", "mode": "euchre", "target": 10 }
+}

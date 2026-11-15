@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "name": "Gin Rummy",
+  "summary": "Two players, ten cards each. Nondealer and then dealer may take the first upcard; if both pass, nondealer draws from stock. Thereafter draw or take the top discard, then discard a different card. Make sets of three or four and same-suit runs with ace low. Knock at ten deadwood or less. The app chooses a lowest-deadwood arrangement automatically. Opponent may lay off against a knock but not gin. Gin scores 25 plus opposing deadwood; an undercut scores 25 plus the difference. A normal knock scores the difference. At two stock cards the deal can end with no score. Play to 100.",
+  "artwork": "poker",
+  "rules": { "type": "rummy", "mode": "gin", "target": 100, "knock_limit": 10, "gin_bonus": 25, "undercut": 25 }
+}

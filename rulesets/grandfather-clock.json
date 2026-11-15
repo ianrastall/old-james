@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "name": "Grandfather’s Clock",
+  "summary": "Build each clock pile up in suit, wrapping from king to ace, until its top matches its hour. In the tableau, move one top card at a time, building down by rank. Any card can fill an empty column.",
+  "artwork": "poker",
+  "rules": {
+    "type": "solitaire",
+    "suits": [
+      "clubs",
+      "diamonds",
+      "hearts",
+      "spades"
+    ],
+    "copies": 1,
+    "deal": [
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "face_up": "all",
+    "build": "rank",
+    "empty": "any",
+    "groups": "single",
+    "stock": {
+      "mode": "none"
+    },
+    "foundations": {
+      "mode": "clock",
+      "seeds": [
+        {
+          "suit": "hearts",
+          "rank": 10,
+          "stop": 1
+        },
+        {
+          "suit": "spades",
+          "rank": 11,
+          "stop": 2
+        },
+        {
+          "suit": "diamonds",
+          "rank": 12,
+          "stop": 3
+        },
+        {
+          "suit": "clubs",
+          "rank": 13,
+          "stop": 4
+        },
+        {
+          "suit": "hearts",
+          "rank": 2,
+          "stop": 5
+        },
+        {
+          "suit": "spades",
+          "rank": 3,
+          "stop": 6
+        },
+        {
+          "suit": "diamonds",
+          "rank": 4,
+          "stop": 7
+        },
+        {
+          "suit": "clubs",
+          "rank": 5,
+          "stop": 8
+        },
+        {
+          "suit": "hearts",
+          "rank": 6,
+          "stop": 9
+        },
+        {
+          "suit": "spades",
+          "rank": 7,
+          "stop": 10
+        },
+        {
+          "suit": "diamonds",
+          "rank": 8,
+          "stop": 11
+        },
+        {
+          "suit": "clubs",
+          "rank": 9,
+          "stop": 12
+        }
+      ]
+    }
+  }
+}

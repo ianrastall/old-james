@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "name": "Spider One Suit",
+  "summary": "Build down by rank. Only a sequence of one suit can move together. Complete king-to-ace runs in one suit are removed. When all ten columns are occupied, the stock can deal one card to each.",
+  "artwork": "poker",
+  "rules": {
+    "type": "solitaire",
+    "suits": [
+      "spades"
+    ],
+    "copies": 8,
+    "deal": [
+      6,
+      6,
+      6,
+      6,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5
+    ],
+    "face_up": "top",
+    "build": "rank",
+    "empty": "any",
+    "groups": "same_suit",
+    "stock": {
+      "mode": "row"
+    },
+    "foundations": {
+      "mode": "runs",
+      "piles": 8
+    }
+  }
+}

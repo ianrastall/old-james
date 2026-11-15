@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "name": "Spades",
+  "summary": "Four seats in partnerships. Bid your tricks or bid nil. Follow suit when possible; spades are trump and may be led once broken or if you only have spades. Made contracts earn ten per bid trick plus bags; missed contracts lose ten per bid trick. Ten bags cost 100. A nil earns 100 if made, loses 100 if set, and its tricks count as bags. Play to 500.",
+  "artwork": "bridge",
+  "rules": {
+    "type": "trick",
+    "mode": "spades",
+    "target": 500
+  }
+}
