@@ -18,6 +18,8 @@ namespace OldJames.Cards;
 
 public sealed partial class MainWindow : Window
 {
+    private const double CardScale = 1.5;
+
     private sealed record GameEntry(string File, string Json, GameInfo Info)
     {
         public override string ToString() => Info.Name;
@@ -38,7 +40,7 @@ public sealed partial class MainWindow : Window
     private bool _loadingGames;
     private bool _closed;
     private string? _modelStatus;
-    private double _cardSize = 76;
+    private double _cardSize = 76 * CardScale;
 
     internal MainWindow(Preferences preferences, AccentService accent)
     {
@@ -216,7 +218,7 @@ public sealed partial class MainWindow : Window
     private void Felt_SizeChanged(object sender, SizeChangedEventArgs args)
     {
         TableRows.MinWidth = Math.Max(0, args.NewSize.Width - 18);
-        var size = Math.Clamp(Math.Floor((args.NewSize.Width - 84) / 10), 52, 112);
+        var size = Math.Clamp(Math.Floor((args.NewSize.Width - 84) / 10), 52, 112) * CardScale;
         if (size == _cardSize) return;
         _cardSize = size;
         Render();
