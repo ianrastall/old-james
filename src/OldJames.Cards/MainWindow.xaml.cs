@@ -386,6 +386,7 @@ public sealed partial class MainWindow : Window
     private void RenderActions()
     {
         Actions.Children.Clear();
+        ActionHeading.Text = "Actions";
         var table = _table!;
         if (table.AgentTurn)
         {
@@ -401,7 +402,7 @@ public sealed partial class MainWindow : Window
         var draw = table.Actions.FirstOrDefault(a => a.Selection is not null && _drawCards.SetEquals(a.Selection.Cards));
         var shown = draw is null ? table.Actions.Where(a => a.Selection is null && (a.Card == 0 || a.Card == _selected?.Id)).ToArray() : [draw];
         if (draw is not null)
-            Actions.Children.Add(new TextBlock { Text = "Select the cards you want to replace.", TextWrapping = TextWrapping.Wrap });
+            ActionHeading.Text = "Select cards to replace";
         if (shown.Length == 0 && table.Actions.Count > 0)
             Actions.Children.Add(new TextBlock { Text = "Select a card to see its moves.", TextWrapping = TextWrapping.Wrap });
         foreach (var action in shown)

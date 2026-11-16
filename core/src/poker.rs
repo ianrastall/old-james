@@ -312,10 +312,11 @@ impl Game {
                         count += 1;
                     }
                 }
-                self.events.push(if count == 0 {
-                    format!("{} stands pat", NAMES[seat])
-                } else {
-                    format!("{} draws {count}", NAMES[seat])
+                self.events.push(match (seat, count) {
+                    (0, 0) => "You stand pat".into(),
+                    (0, _) => format!("You draw {count}"),
+                    (_, 0) => "Old James stands pat".into(),
+                    _ => format!("Old James draws {count}"),
                 });
                 if seat == self.button {
                     self.drawing = false;

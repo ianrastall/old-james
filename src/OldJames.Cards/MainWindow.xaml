@@ -54,7 +54,8 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="2*" />
                 </Grid.RowDefinitions>
-                <TextBlock Text="Actions" Style="{StaticResource JupiterPaneHeadingTextStyle}" />
+                <TextBlock x:Name="ActionHeading" Text="Actions" TextWrapping="Wrap"
+                           Style="{StaticResource JupiterPaneHeadingTextStyle}" />
                 <ScrollViewer Grid.Row="1" x:Name="ActionScroll" VerticalScrollBarVisibility="Auto">
                     <StackPanel x:Name="Actions" Spacing="4" />
                 </ScrollViewer>
