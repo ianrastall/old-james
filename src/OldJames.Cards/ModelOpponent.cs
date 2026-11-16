@@ -165,11 +165,8 @@ internal sealed class ModelOpponent : IDisposable
                     await response.Content.ReadAsStringAsync(deadline.Token).ConfigureAwait(false));
                 throw new InvalidOperationException($"The local model rejected the move request ({(int)response.StatusCode}).");
             }
-            using var body = JsonDocument.Parse(await response.Content.ReadAsByteArrayAsync(deadline.Token)
-                .ConfigureAwait(false));
-            var content = body.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
-            using var answer = JsonDocument.Parse(content ?? "");
-            var action = answer.RootElement.GetProperty("action").GetUInt32();
+            var body = await response.Content.ReadAsByteArrayAsync(deadline.Token).ConfigureAwait(false);
+            var action = ReadAction(body);
             if (!legal.Contains(action))
                 throw new InvalidOperationException("The local model returned an unavailable action.");
             return action;
@@ -178,7 +175,19 @@ internal sealed class ModelOpponent : IDisposable
         {
             throw new InvalidOperationException("The local model took too long to choose an action.");
         }
-        catch (Exception ex) when (ex is JsonException or KeyNotFoundException or IndexOutOfRangeException or FormatException)
+    }
+
+    private static uint ReadAction(byte[] bytes)
+    {
+        try
+        {
+            using var body = JsonDocument.Parse(bytes);
+            var content = body.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
+            using var answer = JsonDocument.Parse(content ?? "");
+            return answer.RootElement.GetProperty("action").GetUInt32();
+        }
+        catch (Exception ex) when (ex is JsonException or KeyNotFoundException
+            or IndexOutOfRangeException or FormatException or InvalidOperationException)
         {
             throw new InvalidOperationException("The local model did not return a complete action.", ex);
         }
