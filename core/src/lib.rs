@@ -455,6 +455,52 @@ mod tests {
     }
 
     #[test]
+    fn blackjack_start_and_restart_deal_the_opening_hand() {
+        let mut engine = Engine::default();
+        let start = wire::Start {
+            ruleset: include_str!("../../rulesets/blackjack.json").into(),
+            seed: 1,
+        };
+        let first = engine
+            .command(Some(Command::Start(start.clone())))
+            .unwrap()
+            .table
+            .unwrap();
+        assert_eq!(first.zones.len(), 2);
+        assert_eq!(first.zones[0].cards.len(), 2);
+        assert!(!first.zones[0].cards[0].hidden);
+        assert!(first.zones[0].cards[1].hidden);
+        assert_eq!(first.zones[1].cards.len(), 2);
+        assert!(first.zones[1].cards.iter().all(|card| !card.hidden));
+        assert_eq!(first.status, "490 play chips");
+        assert!(!first.agent_turn);
+        assert!(first.actions.iter().any(|action| action.label == "Hit"));
+        let stand = first
+            .actions
+            .iter()
+            .find(|action| action.label == "Stand")
+            .unwrap();
+        let settled = engine
+            .command(Some(Command::Apply(wire::Apply {
+                action: stand.id,
+                revision: first.revision,
+                agent: false,
+            })))
+            .unwrap()
+            .table
+            .unwrap();
+        assert_eq!(settled.actions[0].label, "Deal next hand · 10 play chips");
+        let mut restarted = engine
+            .command(Some(Command::Start(start)))
+            .unwrap()
+            .table
+            .unwrap();
+        assert!(restarted.revision > settled.revision);
+        restarted.revision = first.revision;
+        assert_eq!(restarted, first);
+    }
+
+    #[test]
     fn undo_restores_the_previous_deal_position() {
         let mut engine = Engine::default();
         let ruleset = include_str!("../../rulesets/klondike.json").into();

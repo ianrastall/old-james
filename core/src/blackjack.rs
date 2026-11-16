@@ -54,7 +54,7 @@ pub struct Game {
 
 impl Game {
     pub fn new(rules: Rules, seed: u64) -> Self {
-        Self {
+        let mut game = Self {
             seed,
             round: 0,
             chips: u64::from(rules.stack),
@@ -64,7 +64,9 @@ impl Game {
             hands: Vec::new(),
             active: None,
             events: Vec::new(),
-        }
+        };
+        game.deal();
+        game
     }
 
     pub fn choices(&self) -> Vec<Choice<Move>> {
@@ -73,7 +75,7 @@ impl Game {
             return if self.chips >= self.bet {
                 vec![choice(
                     Move::Deal,
-                    format!("Deal · {} play chips", self.bet),
+                    format!("Deal next hand · {} play chips", self.bet),
                 )]
             } else {
                 vec![]
@@ -234,9 +236,7 @@ impl Game {
                 }
             })
             .collect();
-        let label = if self.dealer.is_empty() {
-            "Dealer".into()
-        } else if self.active.is_some() {
+        let label = if self.active.is_some() {
             format!("Dealer shows {}", total_text(&self.dealer[..1]))
         } else {
             format!("Dealer · {}", total_text(&self.dealer))
@@ -322,16 +322,17 @@ mod tests {
             },
             0,
         );
-        game.hands.push(Hand {
+        game.hands = vec![Hand {
             cards: cards(player),
             bet: 10,
             outcome: None,
-        });
+        }];
         game.dealer = cards(dealer);
         game.stock = cards(draws);
         game.stock.reverse();
         game.active = Some(0);
         game.chips = 90;
+        game.events.clear();
         game
     }
 
