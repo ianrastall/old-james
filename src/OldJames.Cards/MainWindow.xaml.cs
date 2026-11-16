@@ -238,6 +238,11 @@ public sealed partial class MainWindow : Window
         _targets.Clear();
         foreach (var group in table.Zones.GroupBy(z => z.Row).OrderBy(g => g.Key))
         {
+            if (group.First().Position is not null)
+            {
+                TableRows.Children.Add(RenderLayeredTableau(group));
+                continue;
+            }
             var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Center };
             foreach (var zone in group) row.Children.Add(RenderZone(zone));
             TableRows.Children.Add(row);
@@ -251,22 +256,36 @@ public sealed partial class MainWindow : Window
         LogScroll.ChangeView(null, double.MaxValue, null, disableAnimation: true);
     }
 
+    private (double Width, double Height) CardDimensions() =>
+        (_cardSize * (_game!.Info.Artwork == "bridge" ? 0.9 : 1), _cardSize * 1.4);
+
+    private Grid RenderLayeredTableau(IEnumerable<Zone> group)
+    {
+        var zones = group.OrderBy(zone => zone.Position.Layer).ThenBy(zone => zone.Position.Column).ToArray();
+        var (width, height) = CardDimensions();
+        var columnStep = width / 2;
+        var layerStep = height / 4;
+        var tableau = new Grid
+        {
+            Width = width + zones.Max(zone => zone.Position.Column) * columnStep,
+            Height = height + zones.Max(zone => zone.Position.Layer) * layerStep,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        foreach (var zone in zones.Where(zone => zone.Cards.Count > 0))
+        {
+            var slot = RenderZone(zone);
+            slot.HorizontalAlignment = HorizontalAlignment.Left;
+            slot.VerticalAlignment = VerticalAlignment.Top;
+            slot.Margin = new Thickness(zone.Position.Column * columnStep, zone.Position.Layer * layerStep, 0, 0);
+            tableau.Children.Add(slot);
+        }
+        return tableau;
+    }
+
     private FrameworkElement RenderZone(Zone zone)
     {
-        var width = _cardSize * (_game!.Info.Artwork == "bridge" ? 0.9 : 1);
-        var height = _cardSize * 1.4;
+        var (width, height) = CardDimensions();
         var cards = new Grid();
-        var items = new StackPanel { Spacing = 4 };
-        var label = new TextBlock
-        {
-            Text = zone.Count > 1 && zone.Label is "Stock" or "Waste"
-                ? $"{zone.Label} ({zone.Count})" : zone.Label,
-            Style = (Style)Application.Current.Resources["JupiterCaptionTextStyle"]
-        };
-        if (!_accessibility.HighContrast)
-            label.Foreground = new SolidColorBrush(Colors.White);
-        items.Children.Add(label);
-        items.Children.Add(cards);
         var spacingX = zone.Layout == Zone.Types.Layout.Hand
             ? (zone.Cards.All(c => c.Hidden) ? 8 : Math.Max(21, width * 0.46)) : 0;
         var spacingY = Math.Max(17, height * 0.23);
@@ -321,6 +340,20 @@ public sealed partial class MainWindow : Window
             element.VerticalAlignment = VerticalAlignment.Top;
             cards.Children.Add(element);
         }
+        if (zone.Position is not null)
+            return cards;
+
+        var label = new TextBlock
+        {
+            Text = zone.Count > 1 && zone.Label is "Stock" or "Waste"
+                ? $"{zone.Label} ({zone.Count})" : zone.Label,
+            Style = (Style)Application.Current.Resources["JupiterCaptionTextStyle"]
+        };
+        if (!_accessibility.HighContrast)
+            label.Foreground = new SolidColorBrush(Colors.White);
+        var items = new StackPanel { Spacing = 4 };
+        items.Children.Add(label);
+        items.Children.Add(cards);
         return items;
     }
 

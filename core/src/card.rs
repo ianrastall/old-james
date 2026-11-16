@@ -107,5 +107,6 @@ pub fn zone(
         layout: layout as i32,
         cards,
         count: count as u32,
+        position: None,
     }
 }

@@ -1,9 +1,11 @@
 mod blackjack;
 mod card;
+mod cribbage;
 mod partnership;
 mod poker;
 mod rummy;
 mod solitaire;
+mod tableau;
 mod trick;
 
 use prost::Message;
@@ -39,6 +41,8 @@ enum Artwork {
 #[serde(tag = "type", rename_all = "snake_case")]
 enum Rules {
     Solitaire(solitaire::Rules),
+    Tableau(tableau::Rules),
+    Cribbage(cribbage::Rules),
     Trick(trick::Rules),
     #[serde(alias = "holdem")]
     Poker(poker::Rules),
@@ -61,6 +65,8 @@ impl Ruleset {
         }
         match &ruleset.rules {
             Rules::Solitaire(rules) => rules.validate()?,
+            Rules::Tableau(_) => {}
+            Rules::Cribbage(rules) => rules.validate()?,
             Rules::Trick(rules) => rules.validate()?,
             Rules::Poker(rules) => rules.validate()?,
             Rules::Blackjack(rules) => rules.validate()?,
@@ -79,7 +85,7 @@ impl Ruleset {
                 Artwork::Bridge => "bridge",
             }
             .into(),
-            multiplayer: !matches!(self.rules, Rules::Solitaire(_)),
+            multiplayer: !matches!(self.rules, Rules::Solitaire(_) | Rules::Tableau(_)),
         }
     }
 }
@@ -107,6 +113,8 @@ impl<T> Choice<T> {
 
 enum Game {
     Solitaire(solitaire::Game, Vec<solitaire::Game>),
+    Tableau(tableau::Game, Vec<tableau::Game>),
+    Cribbage(Box<cribbage::Game>),
     Trick(Box<trick::Game>),
     Poker(poker::Game),
     Blackjack(blackjack::Game),
@@ -117,7 +125,8 @@ enum Game {
 impl Game {
     fn actor_is_agent(&self) -> bool {
         match self {
-            Self::Solitaire(..) | Self::Blackjack(_) => false,
+            Self::Solitaire(..) | Self::Tableau(..) | Self::Blackjack(_) => false,
+            Self::Cribbage(game) => game.actor() > 0,
             Self::Trick(game) => game.actor() > 0,
             Self::Poker(game) => game.actor() > 0,
             Self::Rummy(game) => game.actor() > 0,
@@ -136,16 +145,30 @@ impl Game {
                 })
                 .collect()
         }
+        fn solitaire_table<T>(
+            mut table: wire::Table,
+            choices: Vec<Choice<T>>,
+            can_undo: bool,
+        ) -> wire::Table {
+            table.can_undo = can_undo;
+            table.actions = to_wire(choices);
+            if !table.finished && table.actions.is_empty() {
+                table.status.push_str(" · No legal moves");
+            }
+            table
+        }
         let can_act = self.actor_is_agent() == agent;
         let mut table = match self {
             Self::Solitaire(game, undo) => {
-                let mut table = game.table();
-                table.can_undo = !undo.is_empty();
+                solitaire_table(game.table(), game.choices(), !undo.is_empty())
+            }
+            Self::Tableau(game, undo) => {
+                solitaire_table(game.table(), game.choices(), !undo.is_empty())
+            }
+            Self::Cribbage(game) => {
+                let mut table = game.table(agent);
                 if can_act {
                     table.actions = to_wire(game.choices());
-                    if !table.finished && table.actions.is_empty() {
-                        table.status.push_str(" · No legal moves");
-                    }
                 }
                 table
             }
@@ -197,6 +220,15 @@ impl Game {
                 undo.push(game.clone());
                 game.apply(choice.op);
             }
+            Self::Tableau(game, undo) => {
+                let choice = game.choices().into_iter().nth(index).ok_or_else(illegal)?;
+                undo.push(game.clone());
+                game.apply(choice.op);
+            }
+            Self::Cribbage(game) => {
+                let choice = game.choices().into_iter().nth(index).ok_or_else(illegal)?;
+                game.apply(choice.op);
+            }
             Self::Trick(game) => {
                 let choice = game.choices().into_iter().nth(index).ok_or_else(illegal)?;
                 game.apply(choice.op);
@@ -217,6 +249,16 @@ impl Game {
                 let choice = game.choices().into_iter().nth(index).ok_or_else(illegal)?;
                 game.apply(choice.op);
             }
+        }
+        Ok(())
+    }
+
+    fn undo(&mut self) -> Result<(), String> {
+        let empty = "There is no move to undo.";
+        match self {
+            Self::Solitaire(game, undo) => *game = undo.pop().ok_or(empty)?,
+            Self::Tableau(game, undo) => *game = undo.pop().ok_or(empty)?,
+            _ => return Err("Undo is available in solitaire.".into()),
         }
         Ok(())
     }
@@ -257,6 +299,12 @@ impl Engine {
                 let game = match ruleset.rules {
                     Rules::Solitaire(rules) => {
                         Game::Solitaire(solitaire::Game::new(rules, request.seed), Vec::new())
+                    }
+                    Rules::Tableau(rules) => {
+                        Game::Tableau(tableau::Game::new(rules, request.seed), Vec::new())
+                    }
+                    Rules::Cribbage(rules) => {
+                        Game::Cribbage(Box::new(cribbage::Game::new(rules, request.seed)))
                     }
                     Rules::Trick(rules) => {
                         Game::Trick(Box::new(trick::Game::new(rules, request.seed)))
@@ -302,10 +350,7 @@ impl Engine {
             }
             Command::Undo(_) => {
                 let (_, state) = self.session.as_mut().ok_or("Start a game first.")?;
-                let Game::Solitaire(game, undo) = state else {
-                    return Err("Undo is available in solitaire.".into());
-                };
-                *game = undo.pop().ok_or("There is no move to undo.")?;
+                state.undo()?;
                 self.revision += 1;
                 state.view(self.revision, false)
             }
@@ -498,6 +543,46 @@ mod tests {
         assert!(restarted.revision > settled.revision);
         restarted.revision = first.revision;
         assert_eq!(restarted, first);
+    }
+
+    #[test]
+    fn tripeaks_undo_restores_positions_and_hidden_cards() {
+        let mut engine = Engine::default();
+        let first = engine
+            .command(Some(Command::Start(wire::Start {
+                ruleset: include_str!("../../rulesets/tripeaks.json").into(),
+                seed: 1,
+            })))
+            .unwrap();
+        assert!(!first.game.unwrap().multiplayer);
+        let table = first.table.unwrap();
+        assert_eq!(
+            table
+                .zones
+                .iter()
+                .filter(|zone| zone.position.is_some())
+                .count(),
+            28
+        );
+        assert_eq!(table.actions[0].label, "Draw from stock");
+        let drawn = engine
+            .command(Some(Command::Apply(wire::Apply {
+                revision: table.revision,
+                action: table.actions[0].id,
+                agent: false,
+            })))
+            .unwrap()
+            .table
+            .unwrap();
+        assert!(drawn.can_undo);
+        assert_ne!(drawn.zones, table.zones);
+        let mut undone = engine
+            .command(Some(Command::Undo(wire::Undo {})))
+            .unwrap()
+            .table
+            .unwrap();
+        undone.revision = table.revision;
+        assert_eq!(undone, table);
     }
 
     #[test]

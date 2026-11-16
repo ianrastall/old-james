@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "name": "TriPeaks",
+  "summary": "Clear all three peaks. Click any uncovered card one rank higher or lower than the top of the waste, in any suit. Kings and aces are adjacent. Draw from stock to change the waste card when needed. There is no redeal.",
+  "artwork": "poker",
+  "rules": {
+    "type": "tableau",
+    "mode": "tripeaks"
+  }
+}

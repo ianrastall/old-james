@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "name": "Pyramid",
+  "summary": "Clear the 28 cards in the pyramid. Select two uncovered cards whose ranks add to 13, or an uncovered card and the top waste card. Aces count as 1, jacks as 11, and queens as 12. Remove kings by clicking them on their own. Draw one card to the waste when needed. The stock runs through once, and cards left there do not affect the win.",
+  "artwork": "poker",
+  "rules": {
+    "type": "tableau",
+    "mode": "pyramid"
+  }
+}

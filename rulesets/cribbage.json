@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "name": "Cribbage",
+  "summary": "Two players race to 121. Keep four of your six cards by discarding two to the dealer's crib. A jack starter scores two for the dealer. The nondealer leads. Play cards without exceeding 31, or say Go when none fit. Aces count one and faces count ten. During play, 15 and 31 earn two points, equal ranks and runs also score, and the last card of a count earns one unless it reached 31. Then count the nondealer's hand, dealer's hand, and crib in that order, using the starter. Hands score fifteens, pairs, runs, flushes, and one for a jack matching the starter's suit. The crib requires a five-card flush. The deal alternates.",
+  "artwork": "poker",
+  "rules": {
+    "type": "cribbage",
+    "target": 121
+  }
+}
