@@ -63,4 +63,6 @@ message Action {
   uint32 source = 3;
   uint32 card = 4;
   uint32 destination = 5;
+  CardSelection selection = 6;
 }
+message CardSelection { repeated uint32 cards = 1; }

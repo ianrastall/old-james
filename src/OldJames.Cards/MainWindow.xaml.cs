@@ -32,6 +32,7 @@ public sealed partial class MainWindow : Window
     private readonly UISettings _systemColors = new();
     private readonly Dictionary<string, SvgImageSource> _images = new(StringComparer.Ordinal);
     private readonly Dictionary<(uint Zone, uint Card), Button> _targets = [];
+    private readonly HashSet<uint> _drawCards = [];
     private GameEntry? _game;
     private Table? _table;
     private Card? _selected;
@@ -133,6 +134,7 @@ public sealed partial class MainWindow : Window
         CancelTurn();
         _modelStatus = null;
         _selected = null;
+        _drawCards.Clear();
         try
         {
             var seed = BitConverter.ToUInt64(RandomNumberGenerator.GetBytes(sizeof(ulong)));
@@ -283,10 +285,13 @@ public sealed partial class MainWindow : Window
             var positionX = spacingX * i;
             var isTop = i == zone.Cards.Count - 1 || card is null;
             var targetAction = _selected is null ? null : _table!.Actions.FirstOrDefault(a => a.Card == _selected.Id && a.Destination == zone.Id);
-            var directAction = _table!.Actions.FirstOrDefault(a => a.Source == zone.Id && a.Card == 0);
+            var directAction = _table!.Actions.FirstOrDefault(a => a.Source == zone.Id && a.Card == 0 && a.Selection is null);
             var hasChoice = cardId != 0 && _table.Actions.Any(a => a.Card == cardId);
-            var canClick = hasChoice || (isTop && (targetAction is not null || directAction is not null));
-            var visual = Face(card, width, height, (isTop && targetAction is not null) || _selected?.Id == cardId && cardId != 0);
+            var canDraw = CanSelectForDraw(zone.Id, cardId);
+            var markedForDraw = canDraw && _drawCards.Contains(cardId);
+            var canClick = canDraw || hasChoice || (isTop && (targetAction is not null || directAction is not null));
+            var visual = Face(card, width, height, markedForDraw ||
+                (isTop && targetAction is not null) || _selected?.Id == cardId && cardId != 0);
             FrameworkElement element;
             var name = card is null ? zone.Label : $"{card.Name}, {zone.Label}";
             if (canClick)
@@ -298,6 +303,8 @@ public sealed partial class MainWindow : Window
                     HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch
                 };
                 AutomationProperties.SetName(button, card is null || card.Hidden ? directAction?.Label ?? name : name);
+                if (canDraw)
+                    AutomationProperties.SetItemStatus(button, markedForDraw ? "Selected for replacement" : "Kept");
                 ToolTipService.SetToolTip(button, card is null || card.Hidden ? directAction?.Label ?? name : name);
                 button.Click += (_, _) => Tap(zone.Id, card, isTop);
                 _targets.TryAdd((zone.Id, cardId), button);
@@ -342,16 +349,26 @@ public sealed partial class MainWindow : Window
 
     private static Brush Brush(string key) => JupiterTheme.Brush(key);
 
+    private bool CanSelectForDraw(uint zone, uint card) => card != 0 &&
+        _table!.Actions.Any(action => action.Source == zone && action.Selection?.Cards.Contains(card) == true);
+
     private void Tap(uint zone, Card? card, bool isTop)
     {
         if (_table is null || _game is null) return;
         var actions = _table.Actions;
+        if (card is not null && CanSelectForDraw(zone, card.Id))
+        {
+            if (!_drawCards.Add(card.Id)) _drawCards.Remove(card.Id);
+            Render();
+            if (_targets.TryGetValue((zone, card.Id), out var button)) button.Focus(FocusState.Programmatic);
+            return;
+        }
         if (_selected is not null && isTop)
         {
             var move = actions.FirstOrDefault(a => a.Card == _selected.Id && a.Destination == zone);
             if (move is not null) { Apply(move, _table.Revision, false); return; }
         }
-        if (actions.FirstOrDefault(a => a.Source == zone && a.Card == 0) is { } action)
+        if (actions.FirstOrDefault(a => a.Source == zone && a.Card == 0 && a.Selection is null) is { } action)
         {
             Apply(action, _table.Revision, false);
             return;
@@ -381,12 +398,16 @@ public sealed partial class MainWindow : Window
             else Actions.Children.Add(new ProgressRing { IsActive = true, Width = 24, Height = 24, HorizontalAlignment = HorizontalAlignment.Left });
             return;
         }
-        var shown = table.Actions.Where(a => a.Card == 0 || a.Card == _selected?.Id).ToArray();
+        var draw = table.Actions.FirstOrDefault(a => a.Selection is not null && _drawCards.SetEquals(a.Selection.Cards));
+        var shown = draw is null ? table.Actions.Where(a => a.Selection is null && (a.Card == 0 || a.Card == _selected?.Id)).ToArray() : [draw];
+        if (draw is not null)
+            Actions.Children.Add(new TextBlock { Text = "Select the cards you want to replace.", TextWrapping = TextWrapping.Wrap });
         if (shown.Length == 0 && table.Actions.Count > 0)
             Actions.Children.Add(new TextBlock { Text = "Select a card to see its moves.", TextWrapping = TextWrapping.Wrap });
         foreach (var action in shown)
         {
-            var label = new TextBlock { Text = action.Label, TextWrapping = TextWrapping.Wrap };
+            var text = action.Selection is not null && _drawCards.Count > 0 ? $"Draw {_drawCards.Count}" : action.Label;
+            var label = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap };
             var button = new Button { Content = label, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left };
             button.Click += (_, _) => Apply(action, table.Revision, false);
             Actions.Children.Add(button);
@@ -399,6 +420,7 @@ public sealed partial class MainWindow : Window
         {
             _table = _core.Send(new Request { Apply = new Apply { Action = action.Id, Revision = revision, Agent = agent } }).Table;
             _selected = null;
+            _drawCards.Clear();
             if (!agent) Problem.IsOpen = false;
             Render();
             if (!agent) StartAgent();

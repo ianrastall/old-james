@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "name": "Omaha Hi · Fixed Limit",
+  "summary": "Heads-up Omaha with play chips. Each player gets four private cards. Use exactly two private cards and three community cards to make the best five-card hand. The button posts the small blind and acts first preflop. The other player acts first in later rounds. Bets double on the turn and river. Four wagers maximum per street. Equal hands split the pot. The match ends when a player runs out of chips.",
+  "artwork": "poker",
+  "rules": {
+    "type": "poker",
+    "variant": "omaha",
+    "stack": 500,
+    "small_blind": 5,
+    "max_wagers": 4
+  }
+}

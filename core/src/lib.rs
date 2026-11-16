@@ -1,3 +1,4 @@
+mod blackjack;
 mod card;
 mod partnership;
 mod poker;
@@ -39,7 +40,9 @@ enum Artwork {
 enum Rules {
     Solitaire(solitaire::Rules),
     Trick(trick::Rules),
-    Holdem(poker::Rules),
+    #[serde(alias = "holdem")]
+    Poker(poker::Rules),
+    Blackjack(blackjack::Rules),
     Rummy(rummy::Rules),
     Partnership(partnership::Rules),
 }
@@ -59,7 +62,8 @@ impl Ruleset {
         match &ruleset.rules {
             Rules::Solitaire(rules) => rules.validate()?,
             Rules::Trick(rules) => rules.validate()?,
-            Rules::Holdem(rules) => rules.validate()?,
+            Rules::Poker(rules) => rules.validate()?,
+            Rules::Blackjack(rules) => rules.validate()?,
             Rules::Rummy(rules) => rules.validate()?,
             Rules::Partnership(rules) => rules.validate()?,
         }
@@ -95,6 +99,7 @@ impl<T> Choice<T> {
                 source,
                 card,
                 destination,
+                selection: None,
             },
         }
     }
@@ -103,7 +108,8 @@ impl<T> Choice<T> {
 enum Game {
     Solitaire(solitaire::Game, Vec<solitaire::Game>),
     Trick(Box<trick::Game>),
-    Holdem(poker::Game),
+    Poker(poker::Game),
+    Blackjack(blackjack::Game),
     Rummy(Box<rummy::Game>),
     Partnership(Box<partnership::Game>),
 }
@@ -111,9 +117,9 @@ enum Game {
 impl Game {
     fn actor_is_agent(&self) -> bool {
         match self {
-            Self::Solitaire(..) => false,
+            Self::Solitaire(..) | Self::Blackjack(_) => false,
             Self::Trick(game) => game.actor() > 0,
-            Self::Holdem(game) => game.actor() > 0,
+            Self::Poker(game) => game.actor() > 0,
             Self::Rummy(game) => game.actor() > 0,
             Self::Partnership(game) => game.actor() > 0,
         }
@@ -150,8 +156,15 @@ impl Game {
                 }
                 table
             }
-            Self::Holdem(game) => {
+            Self::Poker(game) => {
                 let mut table = game.table(agent);
+                if can_act {
+                    table.actions = to_wire(game.choices());
+                }
+                table
+            }
+            Self::Blackjack(game) => {
+                let mut table = game.table();
                 if can_act {
                     table.actions = to_wire(game.choices());
                 }
@@ -188,7 +201,11 @@ impl Game {
                 let choice = game.choices().into_iter().nth(index).ok_or_else(illegal)?;
                 game.apply(choice.op);
             }
-            Self::Holdem(game) => {
+            Self::Poker(game) => {
+                let choice = game.choices().into_iter().nth(index).ok_or_else(illegal)?;
+                game.apply(choice.op);
+            }
+            Self::Blackjack(game) => {
                 let choice = game.choices().into_iter().nth(index).ok_or_else(illegal)?;
                 game.apply(choice.op);
             }
@@ -244,7 +261,10 @@ impl Engine {
                     Rules::Trick(rules) => {
                         Game::Trick(Box::new(trick::Game::new(rules, request.seed)))
                     }
-                    Rules::Holdem(rules) => Game::Holdem(poker::Game::new(rules, request.seed)),
+                    Rules::Poker(rules) => Game::Poker(poker::Game::new(rules, request.seed)),
+                    Rules::Blackjack(rules) => {
+                        Game::Blackjack(blackjack::Game::new(rules, request.seed))
+                    }
                     Rules::Rummy(rules) => {
                         Game::Rummy(Box::new(rummy::Game::new(rules, request.seed)))
                     }

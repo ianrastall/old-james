@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "name": "Blackjack",
+  "summary": "Play against the built-in dealer with a fresh 52-card deck and a fixed bet of 10 play chips each round. Get closer to 21 than the dealer without going over. Aces count as 1 or 11. The dealer stands on all 17s, including soft 17. A two-card blackjack pays 3:2, ordinary wins pay 1:1, and ties return the bet. Double down on two cards to receive exactly one more card. With enough chips, split one pair of the same rank. Split aces receive one card each, and a split 21 pays as an ordinary win. Choose New game to start again with 500 play chips.",
+  "artwork": "poker",
+  "rules": {
+    "type": "blackjack",
+    "stack": 500,
+    "bet": 10
+  }
+}

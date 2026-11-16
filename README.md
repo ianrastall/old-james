@@ -1,6 +1,6 @@
 # Old James
 
-Old James is a Windows card table for playing solitaire or playing against a
+Old James is a Windows card table for solitaire, Blackjack, and games against a
 local language model. Open **Old James** from Start and choose a game. Click
 an eligible card, then a marked destination or an action. In trick-taking
 games, click an eligible card to play it. **Rules** shows the selected variant.
@@ -10,9 +10,11 @@ or [report a problem](https://github.com/ianrastall/old-james/issues).
 
 ## Games
 
-- **Multiplayer** — Contract Bridge with raw duplicate scoring, heads-up
-  fixed-limit Texas Hold'em with play chips, Hearts, Spades, single-deck
-  Pinochle, Euchre, two-player Basic Rummy, and Gin Rummy.
+- **Poker** — Heads-up fixed-limit Texas Hold’em, Omaha Hi, Five-Card Draw,
+  and Seven-Card Stud. All use play chips.
+- **Blackjack** — Single-deck play against a built-in dealer using play chips.
+- **Other multiplayer games** — Contract Bridge with raw duplicate scoring,
+  Hearts, Spades, single-deck Pinochle, Euchre, Basic Rummy, and Gin Rummy.
 - **Solitaire** — Klondike, Double Klondike, Diplomat, Spider One Suit,
   Spider Two Suits, Grandfather's Clock, and FreeCell. Both Klondike games
   use draw one and allow unlimited redeals.
@@ -20,8 +22,8 @@ or [report a problem](https://github.com/ianrastall/old-james/issues).
 The **Settings** dialog accepts a local GGUF model for multiplayer. The
 installer bundles llama.cpp. Each opponent receives its own visible position,
 the selected rules, public play, and the legal actions for its current turn.
-If inference pauses, use **Resume opponent** to retry. Solitaire does not
-load a model and supports undo. Active games are held in memory.
+If inference pauses, use **Resume opponent** to retry. Blackjack and solitaire
+run without a model. Solitaire supports undo. Active games are held in memory.
 
 ### Add a game
 

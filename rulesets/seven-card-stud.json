@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "name": "Seven-Card Stud · Fixed Limit",
+  "summary": "Heads-up Seven-Card Stud with play chips. Both players ante and receive two private cards and one face-up card. The lowest upcard opens with a bring-in or a full bet. Equal ranks are ordered clubs, diamonds, hearts, then spades. Three more cards come face up, then the seventh face down, with a betting round after each. After the bring-in round, the strongest exposed hand acts first. Bets double from fifth street. Four full wagers maximum per street. The best five cards win, and equal hands split the pot. The match ends when a player runs out of chips.",
+  "artwork": "poker",
+  "rules": {
+    "type": "poker",
+    "variant": "stud",
+    "stack": 500,
+    "small_blind": 5,
+    "ante": 1,
+    "max_wagers": 4
+  }
+}

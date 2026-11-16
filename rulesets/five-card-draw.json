@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "name": "Five-Card Draw · Fixed Limit",
+  "summary": "Heads-up Five-Card Draw with play chips. Each player gets five private cards. The button posts the small blind and acts first before the draw. The other player draws first and opens the second betting round. Select any cards to replace, or stand pat to keep all five. Bets double after the draw. Four wagers maximum per round. The highest five-card hand wins, and equal hands split the pot. The match ends when a player runs out of chips.",
+  "artwork": "poker",
+  "rules": {
+    "type": "poker",
+    "variant": "draw",
+    "stack": 500,
+    "small_blind": 5,
+    "max_wagers": 4
+  }
+}
