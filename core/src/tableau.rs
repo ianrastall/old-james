@@ -47,6 +47,7 @@ struct Cell {
 #[derive(Clone, Copy)]
 pub enum Move {
     Draw,
+    Recycle,
     Remove(u32),
     Pair(u32, u32),
     ToWaste(u32),
@@ -59,6 +60,7 @@ pub struct Game {
     stock: Vec<Card>,
     waste: Vec<Card>,
     moves: usize,
+    redeals_left: u8,
 }
 
 impl Game {
@@ -89,6 +91,7 @@ impl Game {
             stock,
             waste,
             moves: 0,
+            redeals_left: if rules.mode == Mode::Pyramid { 2 } else { 0 },
         }
     }
 
@@ -113,6 +116,14 @@ impl Game {
             choices.push(Choice::new(
                 Move::Draw,
                 "Draw from stock".into(),
+                STOCK,
+                0,
+                0,
+            ));
+        } else if self.redeals_left > 0 && !self.waste.is_empty() {
+            choices.push(Choice::new(
+                Move::Recycle,
+                "Turn waste over".into(),
                 STOCK,
                 0,
                 0,
@@ -183,6 +194,10 @@ impl Game {
     pub fn apply(&mut self, action: Move) {
         match action {
             Move::Draw => self.waste.push(self.stock.pop().expect("stock card")),
+            Move::Recycle => {
+                self.stock.extend(self.waste.drain(..).rev());
+                self.redeals_left -= 1;
+            }
             Move::Remove(id) => {
                 self.take(id);
             }
@@ -241,14 +256,19 @@ impl Game {
             zones.push(zone);
         }
         let remaining = self.remaining();
+        let status = if remaining == 0 {
+            format!("Won in {} moves", self.moves)
+        } else {
+            let mut status = format!("Tableau cards left: {remaining} · Moves: {}", self.moves);
+            if self.mode == Mode::Pyramid {
+                status.push_str(&format!(" · Redeals left: {}", self.redeals_left));
+            }
+            status
+        };
         wire::Table {
             zones,
             finished: remaining == 0,
-            status: if remaining == 0 {
-                format!("Won in {} moves", self.moves)
-            } else {
-                format!("Tableau cards left: {remaining} · Moves: {}", self.moves)
-            },
+            status,
             ..Default::default()
         }
     }
@@ -329,5 +349,31 @@ mod tests {
         game.cells[26].card = None;
         assert!(game.exposed(&game.cells[17]));
         assert!(!game.table().zones[19].cards[0].hidden);
+    }
+
+    #[test]
+    fn pyramid_redeals_the_remaining_waste_twice() {
+        let mut game = Game::new(
+            Rules {
+                mode: Mode::Pyramid,
+            },
+            0,
+        );
+        game.stock = vec![card(1, Suit::Clubs), card(2, Suit::Clubs)];
+        let initial = game.stock.clone();
+        for left in (0..=2).rev() {
+            assert_eq!(game.stock, initial);
+            game.apply(Move::Draw);
+            game.apply(Move::Draw);
+            let recycle = game
+                .choices()
+                .into_iter()
+                .find(|choice| matches!(choice.op, Move::Recycle));
+            if left > 0 {
+                game.apply(recycle.unwrap().op);
+            } else {
+                assert!(recycle.is_none());
+            }
+        }
     }
 }
