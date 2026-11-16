@@ -29,6 +29,7 @@
     <ProjectReference Include="..\OldJames.Interop\OldJames.Interop.csproj" />
     <Content Include="$(RepoRoot)assets\cards\standard\**\*" Link="cards\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="$(RepoRoot)assets\OldJames.ico" Link="OldJames.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(RepoRoot)assets\OldJames-icon.LICENSE" Link="OldJames-icon.LICENSE" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="$(RepoRoot)rulesets\*.json" Link="rulesets\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="$(RepoRoot)core\target\$(RustProfile)\old_james_cards_core.dll" Link="old_james_cards_core.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="$(RepoRoot).build\runtime\*" Link="runtime\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />

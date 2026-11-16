@@ -5,6 +5,9 @@ local language model. Open **Old James** from Start and choose a game. Click
 an eligible card, then a marked destination or an action. In trick-taking
 games, click an eligible card to play it. **Rules** shows the selected variant.
 
+[Download the Windows installer](https://github.com/ianrastall/old-james/releases)
+or [report a problem](https://github.com/ianrastall/old-james/issues).
+
 ## Games
 
 - **Multiplayer** — Contract Bridge with raw duplicate scoring, heads-up
@@ -33,7 +36,8 @@ mechanic outside those families needs a new engine primitive.
 ## Build and install
 
 Build on Windows 11 24H2 or later with .NET SDK 10.0.113, Rust with the x64
-MSVC build tools, Inno Setup 6, and the sibling `jupiter-ui` repository.
+MSVC build tools, and Inno Setup 6. Clone [Jupiter.UI](https://github.com/ianrastall/jupiter-ui)
+into a `jupiter-ui` folder alongside `old-james`.
 Run `pwsh -File build.ps1` to build `dist/Old-James-Setup.exe`. The installer
 includes the app runtimes and can seed the local GGUF path via
 `/MODELFILE="D:\path\to\model.gguf"`. Settings and custom rulesets are stored
@@ -58,3 +62,5 @@ Suited faces use `faces/<suit>/<rank>.svg` and the back is `backs/blue.svg`.
 The bundled copies expand SVG symbols, references, and lattice tiles into
 vector shapes for WinUI. The faces adapt Adrian Kennard's SVG playing cards.
 The artwork's [CC0 license](assets/cards/standard/LICENSE) accompanies the files.
+The app icon uses the Design 1 ace and back under their
+[MIT license](assets/OldJames-icon.LICENSE).
