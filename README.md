@@ -44,18 +44,17 @@ checks. The WinUI build runs the Jupiter style check automatically.
 
 ## Card artwork
 
-Both asset packs use the released **Design 1** artwork from the sibling
-`playing-cards` repository at `d1fbb186ae35e870af513b77953620b26fe8e955`.
-Each pack includes 52 suited faces, two jokers, and the Prussian Blue back.
-The approved sources were verified against `designs/design1/catalog.json`
-and resized to one third of their original width and height with Pillow's
-Lanczos resampler. The PNGs retain their transparent corners.
+Old James uses the approved **Standard** English-pattern SVG deck from the
+sibling `playing-cards` repository at
+`3db4b67955d66fc0800abbf72ea9c57a404b4284`. Each pack includes 52 suited faces
+and the blue lattice back.
 
-| Pack | Image size |
+| Pack | SVG viewBox size |
 | --- | --- |
-| [Poker](assets/cards/design1/poker/) | 250 × 350 px |
-| [Bridge](assets/cards/design1/bridge/) | 225 × 350 px |
+| [Poker](assets/cards/standard/poker/) | 240 × 336 |
+| [Bridge](assets/cards/standard/bridge/) | 216 × 336 |
 
-Suited faces use `faces/<suit>/<rank>.png`, jokers use `faces/jokers/<color>.png`,
-and the back is `backs/prussian-blue.png`, all relative to each pack.
-The artwork's [MIT license](assets/cards/design1/LICENSE) accompanies the files.
+Suited faces use `faces/<suit>/<rank>.svg` and the back is `backs/blue.svg`.
+The bundled copies expand SVG symbols, references, and lattice tiles into
+vector shapes for WinUI. The faces adapt Adrian Kennard's SVG playing cards.
+The artwork's [CC0 license](assets/cards/standard/LICENSE) accompanies the files.

@@ -30,7 +30,7 @@ public sealed partial class MainWindow : Window
     private readonly CardCore _core = new();
     private readonly AccessibilitySettings _accessibility = new();
     private readonly UISettings _systemColors = new();
-    private readonly Dictionary<string, BitmapImage> _images = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, SvgImageSource> _images = new(StringComparer.Ordinal);
     private readonly Dictionary<(uint Zone, uint Card), Button> _targets = [];
     private GameEntry? _game;
     private Table? _table;
@@ -323,13 +323,13 @@ public sealed partial class MainWindow : Window
         if (card is not null)
         {
             var format = _game!.Info.Artwork;
-            var relative = card.Hidden ? $"{format}/backs/prussian-blue.png" : $"{format}/faces/{card.Suit}/{card.Rank}.png";
+            var relative = card.Hidden ? $"{format}/backs/blue.svg" : $"{format}/faces/{card.Suit}/{card.Rank}.svg";
             if (!_images.TryGetValue(relative, out var image))
             {
-                image = new BitmapImage(new Uri($"ms-appx:///cards/{relative}"));
+                image = new SvgImageSource(new Uri($"ms-appx:///cards/{relative}"));
                 _images.Add(relative, image);
             }
-            border.Child = new Image { Source = image, Stretch = Stretch.Fill };
+            border.Child = new Image { Source = image, Stretch = Stretch.Uniform };
         }
         if (card is null || highlighted)
         {
