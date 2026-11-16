@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "name": "Westcliff",
+  "summary": "Start with three cards in each of ten columns, with the top card face up. Build down in alternating colors and move ordered sequences together. Any card or sequence can fill an empty column. Draw one card at a time with no redeal. Build the four foundations up by suit from ace to king.",
+  "artwork": "poker",
+  "rules": {
+    "type": "solitaire",
+    "suits": [
+      "clubs",
+      "diamonds",
+      "hearts",
+      "spades"
+    ],
+    "copies": 1,
+    "deal": [
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3
+    ],
+    "face_up": "top",
+    "build": "alternate",
+    "empty": "any",
+    "groups": "in_order",
+    "stock": {
+      "mode": "waste",
+      "draw": 1,
+      "recycle": false
+    },
+    "foundations": {
+      "mode": "ace",
+      "piles": 4
+    }
+  }
+}

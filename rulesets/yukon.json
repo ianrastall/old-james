@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "name": "Yukon",
+  "summary": "Build down by alternating colors. Move any face-up card together with all cards above it, even when the group is out of sequence. Only kings or king-led groups can fill empty columns. There is no stock. Build the foundations up by suit from ace to king.",
+  "artwork": "poker",
+  "rules": {
+    "type": "solitaire",
+    "suits": [
+      "clubs",
+      "diamonds",
+      "hearts",
+      "spades"
+    ],
+    "copies": 1,
+    "deal": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "face_up": "top",
+    "build": "alternate",
+    "empty": "king",
+    "groups": "unordered",
+    "stock": {
+      "mode": "none"
+    },
+    "foundations": {
+      "mode": "ace",
+      "piles": 4
+    },
+    "extra_face_up": [
+      0,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ]
+  }
+}

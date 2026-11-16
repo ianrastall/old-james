@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "name": "Australian Patience",
+  "summary": "Start with four face-up cards in each column. Build down by suit. Move any face-up card together with the cards above it, even when the group is out of sequence. Empty columns take kings or king-led groups. Draw one card at a time with no redeal. Build the foundations up by suit from ace to king.",
+  "artwork": "poker",
+  "rules": {
+    "type": "solitaire",
+    "suits": [
+      "clubs",
+      "diamonds",
+      "hearts",
+      "spades"
+    ],
+    "copies": 1,
+    "deal": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      4,
+      4
+    ],
+    "face_up": "all",
+    "build": "suit",
+    "empty": "king",
+    "groups": "unordered",
+    "stock": {
+      "mode": "waste",
+      "draw": 1,
+      "recycle": false
+    },
+    "foundations": {
+      "mode": "ace",
+      "piles": 4
+    }
+  }
+}

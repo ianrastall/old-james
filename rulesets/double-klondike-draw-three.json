@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "name": "Double Klondike · Draw Three",
+  "summary": "Draw three cards at a time and play only the top card of the waste. Redeal as often as you like. Build the columns down in alternating colors and place only kings or king-led sequences in empty columns. Build the foundations up by suit from ace to king.",
+  "artwork": "poker",
+  "rules": {
+    "type": "solitaire",
+    "suits": [
+      "clubs",
+      "diamonds",
+      "hearts",
+      "spades"
+    ],
+    "copies": 2,
+    "deal": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "face_up": "top",
+    "build": "alternate",
+    "empty": "king",
+    "groups": "in_order",
+    "stock": {
+      "mode": "waste",
+      "draw": 3,
+      "recycle": true
+    },
+    "foundations": {
+      "mode": "ace",
+      "piles": 8
+    },
+    "return_from_foundation": true
+  }
+}

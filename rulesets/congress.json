@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "name": "Congress",
+  "summary": "Start with one card in each of eight columns. Build the eight foundations up by suit from ace to king. Build columns down by rank, regardless of suit. Move one card at a time. An empty column refills from the waste, then from the stock if the waste is empty. After both run out, any card can fill an empty column. Draw one card at a time with no redeal.",
+  "artwork": "poker",
+  "rules": {
+    "type": "solitaire",
+    "suits": [
+      "clubs",
+      "diamonds",
+      "hearts",
+      "spades"
+    ],
+    "copies": 2,
+    "deal": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "face_up": "all",
+    "build": "rank",
+    "empty": "refill",
+    "groups": "single",
+    "stock": {
+      "mode": "waste",
+      "draw": 1,
+      "recycle": false
+    },
+    "foundations": {
+      "mode": "ace",
+      "piles": 8
+    }
+  }
+}

@@ -259,7 +259,7 @@ public sealed partial class MainWindow : Window
         var items = new StackPanel { Spacing = 4 };
         var label = new TextBlock
         {
-            Text = zone.Layout == Zone.Types.Layout.Pile && zone.Count > 1 && zone.Label is "Stock" or "Waste"
+            Text = zone.Count > 1 && zone.Label is "Stock" or "Waste"
                 ? $"{zone.Label} ({zone.Count})" : zone.Label,
             Style = (Style)Application.Current.Resources["JupiterCaptionTextStyle"]
         };

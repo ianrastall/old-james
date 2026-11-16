@@ -15,9 +15,21 @@ or [report a problem](https://github.com/ianrastall/old-james/issues).
 - **Blackjack** — Single-deck play against a built-in dealer using play chips.
 - **Other multiplayer games** — Contract Bridge with raw duplicate scoring,
   Hearts, Spades, single-deck Pinochle, Euchre, Basic Rummy, and Gin Rummy.
-- **Solitaire** — Klondike, Double Klondike, Diplomat, Spider One Suit,
-  Spider Two Suits, Grandfather's Clock, and FreeCell. Both Klondike games
-  use draw one and allow unlimited redeals.
+- **Solitaire**
+  - Klondike and Double Klondike (Draw One and Draw Three), and Westcliff.
+  - Yukon, Russian Solitaire, Alaska, and Australian Patience.
+  - Diplomat, Rows of Four, Lady Palk, Congress, Parliament, and Forty Thieves.
+  - Spider One Suit, Spider Two Suits, Grandfather’s Clock, and FreeCell.
+
+The original Klondike and Double Klondike entries draw one card at a time.
+Both Draw Three entries allow unlimited redeals. Rules for the individual
+variants are available from **Rules** in the app.
+
+Variant references include [Yukon](https://pysolfc.sourceforge.io/doc/rules/yukon.html),
+[Australian Patience](https://www.goodsol.com/pgshelp/australian_patience.htm),
+[Rows of Four](https://www.goodsol.com/pgshelp/rows_of_four.htm),
+[Parliament](https://pysolfc.sourceforge.io/doc/rules/parliament.html),
+and [Westcliff](https://www.bvssolitaire.com/rules/westcliff.htm).
 
 The **Settings** dialog accepts a local GGUF model for multiplayer. The
 installer bundles llama.cpp. Each opponent receives its own visible position,
