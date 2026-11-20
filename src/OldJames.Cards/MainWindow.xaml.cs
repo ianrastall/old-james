@@ -39,6 +39,7 @@ public sealed partial class MainWindow : Window
     private ModelOpponent? _opponent;
     private CancellationTokenSource? _turn;
     private bool _loadingGames;
+    private bool _canSave;
     private bool _closed;
     private string? _modelStatus;
     private double _cardSize = 76 * CardScale;
@@ -68,7 +69,7 @@ public sealed partial class MainWindow : Window
     {
         Root.Loaded -= Root_Loaded;
         LoadGames();
-        Start();
+        OpenGame(resume: true);
     }
 
     private void WindowClosed(object sender, WindowEventArgs args)
@@ -128,21 +129,53 @@ public sealed partial class MainWindow : Window
         finally { _loadingGames = false; }
     }
 
-    private void Start()
+    private void OpenGame(bool resume)
     {
         if (Games.SelectedItem is not GameEntry game) return;
-        CancelTurn();
-        _modelStatus = null;
-        _selected = null;
-        _drawCards.Clear();
+
+        Reply? restored = null;
+        string? restoreError = null;
+        if (resume)
+        {
+            try
+            {
+                if (SavedGames.Load(game.File) is { } saved)
+                    restored = _core.Send(new Request { Restore = saved });
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+            {
+                restoreError = ex.Message;
+            }
+        }
+
         try
         {
-            var seed = BitConverter.ToUInt64(RandomNumberGenerator.GetBytes(sizeof(ulong)));
-            var reply = _core.Send(new Request { Start = new Start { Ruleset = game.Json, Seed = seed } });
-            _game = game;
+            var reply = restored ?? _core.Send(new Request
+            {
+                Start = new Start
+                {
+                    Ruleset = game.Json,
+                    Seed = BitConverter.ToUInt64(RandomNumberGenerator.GetBytes(sizeof(ulong)))
+                }
+            });
+
+            CancelTurn();
+            _modelStatus = null;
+            _selected = null;
+            _drawCards.Clear();
+            _game = game with { Info = reply.Game };
+            _table = reply.Table;
+            _canSave = restoreError is null;
+            SaveProblem.IsOpen = !_canSave;
+            if (restoreError is not null)
+            {
+                SaveProblem.Title = "The saved game could not be opened.";
+                SaveProblem.Message = $"{restoreError} This table is temporary. Choose New game to replace the saved table.";
+            }
+
             _preferences.Game = game.File;
             _preferences.Save();
-            _table = reply.Table;
+            if (restored is null) SaveProgress();
             Render();
             Felt.ChangeView(0, 0, null, disableAnimation: true);
             StartAgent();
@@ -150,11 +183,11 @@ public sealed partial class MainWindow : Window
         catch (InvalidOperationException ex) { ShowProblem("The game could not start.", ex.Message); }
     }
 
-    private void NewDeal_Click(object sender, RoutedEventArgs args) => Start();
+    private void NewDeal_Click(object sender, RoutedEventArgs args) => OpenGame(resume: false);
 
     private void Games_SelectionChanged(object sender, SelectionChangedEventArgs args)
     {
-        if (!_loadingGames) Start();
+        if (!_loadingGames) OpenGame(resume: true);
     }
 
     private void Undo_Click(object sender, RoutedEventArgs args)
@@ -164,6 +197,7 @@ public sealed partial class MainWindow : Window
         {
             _table = _core.Send(new Request { Undo = new Undo() }).Table;
             _selected = null;
+            SaveProgress();
             Render();
         }
         catch (InvalidOperationException ex) { ShowProblem("Undo could not be applied.", ex.Message); }
@@ -214,7 +248,7 @@ public sealed partial class MainWindow : Window
     private void Reload_Click(object sender, RoutedEventArgs args)
     {
         LoadGames();
-        if (_game is null) Start();
+        if (_game is null) OpenGame(resume: true);
     }
 
     private void Felt_SizeChanged(object sender, SizeChangedEventArgs args)
@@ -456,6 +490,7 @@ public sealed partial class MainWindow : Window
             _selected = null;
             _drawCards.Clear();
             if (!agent) Problem.IsOpen = false;
+            SaveProgress();
             Render();
             if (!agent) StartAgent();
         }
@@ -463,6 +498,23 @@ public sealed partial class MainWindow : Window
         {
             if (agent) throw;
             ShowProblem("That action could not be played.", ex.Message);
+        }
+    }
+
+    private void SaveProgress()
+    {
+        if (!_canSave || _game is null) return;
+        try
+        {
+            var reply = _core.Send(new Request { Checkpoint = new Checkpoint() });
+            SavedGames.Save(_game.File, reply.SavedGame);
+            SaveProblem.IsOpen = false;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            SaveProblem.Title = "Game progress could not be saved.";
+            SaveProblem.Message = ex.Message;
+            SaveProblem.IsOpen = true;
         }
     }
 

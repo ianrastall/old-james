@@ -10,6 +10,8 @@ message Request {
     View view = 4;
     Undo undo = 5;
     Inspect inspect = 6;
+    Checkpoint checkpoint = 7;
+    SavedGame restore = 8;
   }
 }
 message Start { string ruleset = 1; uint64 seed = 2; }
@@ -17,12 +19,19 @@ message Apply { uint64 revision = 1; uint32 action = 2; bool agent = 3; }
 message View { bool agent = 1; }
 message Undo {}
 message Inspect { string ruleset = 1; }
+message Checkpoint {}
+message SavedGame {
+  uint32 version = 1;
+  Start start = 2;
+  repeated uint32 actions = 3;
+}
 
 message Reply {
   uint64 id = 1;
   string error = 2;
   Table table = 3;
   GameInfo game = 4;
+  SavedGame saved_game = 5;
 }
 message GameInfo {
   string name = 1;

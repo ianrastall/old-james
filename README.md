@@ -39,7 +39,11 @@ The **Settings** dialog accepts a local GGUF model for multiplayer. The
 installer bundles llama.cpp. Each opponent receives its own visible position,
 the selected rules, public play, and the legal actions for its current turn.
 If inference pauses, use **Resume opponent** to retry. Blackjack and solitaire
-run without a model. Solitaire supports undo. Active games are held in memory.
+run without a model.
+
+Each game saves its table locally after every move, including solitaire undo
+history. Select a game to return to its table. Reopening Old James returns to
+the last game you opened. **New game** replaces the selected game's saved table.
 
 ### Add a game
 
@@ -59,7 +63,7 @@ into a `jupiter-ui` folder alongside `old-james`.
 Run `pwsh -File build.ps1` to build `dist/Old-James-Setup.exe`. The installer
 includes the app runtimes and can seed the local GGUF path via
 `/MODELFILE="D:\path\to\model.gguf"`. Settings and custom rulesets are stored
-under `%LOCALAPPDATA%\Old James Cards`.
+under `%LOCALAPPDATA%\Old James Cards`, along with saved games.
 
 Run `cargo test --locked --manifest-path core/Cargo.toml` for the rules engine
 checks. The WinUI build runs the Jupiter style check automatically.

@@ -36,7 +36,10 @@
             <Button x:Name="UndoButton" Content="Undo" Click="Undo_Click" />
             <Button Content="Rules" Click="Rules_Click" />
         </StackPanel>
-        <InfoBar Grid.Row="2" x:Name="Problem" Severity="Error" IsClosable="True" />
+        <StackPanel Grid.Row="2">
+            <InfoBar x:Name="Problem" Severity="Error" IsClosable="True" />
+            <InfoBar x:Name="SaveProblem" Severity="Warning" IsClosable="True" />
+        </StackPanel>
         <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />

@@ -5,10 +5,10 @@ namespace OldJames.Cards;
 
 internal sealed class Preferences : IAccentPreferences
 {
-    private static readonly string DirectoryPath = Path.Combine(
+    public static readonly string DataDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Old James Cards");
-    private static readonly string SettingsPath = Path.Combine(DirectoryPath, "settings.json");
-    public static string RulesetDirectory => Path.Combine(DirectoryPath, "rulesets");
+    private static readonly string SettingsPath = Path.Combine(DataDirectory, "settings.json");
+    public static string RulesetDirectory => Path.Combine(DataDirectory, "rulesets");
 
     public bool UseCustomAccent { get; set; }
     public string? CustomAccent { get; set; }
@@ -50,8 +50,8 @@ internal sealed class Preferences : IAccentPreferences
     {
         try
         {
-            Directory.CreateDirectory(DirectoryPath);
-            var temporary = Path.Combine(DirectoryPath, $"settings-{Guid.NewGuid():N}.tmp");
+            Directory.CreateDirectory(DataDirectory);
+            var temporary = Path.Combine(DataDirectory, $"settings-{Guid.NewGuid():N}.tmp");
             try
             {
                 File.WriteAllText(temporary, JsonSerializer.Serialize(this));

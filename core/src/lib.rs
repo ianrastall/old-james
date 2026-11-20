@@ -20,6 +20,12 @@ mod wire {
     include!(concat!(env!("OUT_DIR"), "/old_james.cards.rs"));
 }
 
+const MAX_REQUEST_BYTES: usize = 128 * 1024;
+// A saved game must fit inside a restore request, including its envelope.
+const MAX_SAVED_GAME_BYTES: usize = MAX_REQUEST_BYTES - 16;
+// Replay depends on the seeded shuffle, game logic and legal action ordering.
+const SAVE_VERSION: u32 = 1;
+
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Ruleset {
@@ -264,9 +270,69 @@ impl Game {
     }
 }
 
+struct Session {
+    info: wire::GameInfo,
+    game: Game,
+    save: wire::SavedGame,
+}
+
+impl Session {
+    fn start(start: wire::Start) -> Result<Self, String> {
+        let ruleset = Ruleset::read(&start.ruleset)?;
+        let info = ruleset.info();
+        let seed = start.seed;
+        let game = match ruleset.rules {
+            Rules::Solitaire(rules) => {
+                Game::Solitaire(solitaire::Game::new(rules, seed), Vec::new())
+            }
+            Rules::Tableau(rules) => Game::Tableau(tableau::Game::new(rules, seed), Vec::new()),
+            Rules::Cribbage(rules) => Game::Cribbage(Box::new(cribbage::Game::new(rules, seed))),
+            Rules::Trick(rules) => Game::Trick(Box::new(trick::Game::new(rules, seed))),
+            Rules::Poker(rules) => Game::Poker(poker::Game::new(rules, seed)),
+            Rules::Blackjack(rules) => Game::Blackjack(blackjack::Game::new(rules, seed)),
+            Rules::Rummy(rules) => Game::Rummy(Box::new(rummy::Game::new(rules, seed))),
+            Rules::Partnership(rules) => {
+                Game::Partnership(Box::new(partnership::Game::new(rules, seed)))
+            }
+        };
+        let save = wire::SavedGame {
+            version: SAVE_VERSION,
+            start: Some(start),
+            actions: Vec::new(),
+        };
+        Ok(Self { info, game, save })
+    }
+
+    fn restore(save: wire::SavedGame) -> Result<Self, String> {
+        if save.version != SAVE_VERSION {
+            return Err("This saved game uses an unsupported format.".into());
+        }
+        if save.encoded_len() > MAX_SAVED_GAME_BYTES {
+            return Err("This saved game is too large to restore.".into());
+        }
+        let mut session = Self::start(save.start.ok_or("The saved game is missing its deal.")?)?;
+        for action in save.actions {
+            session.apply(action).map_err(|error| {
+                format!(
+                    "Saved move {} could not be replayed. {error}",
+                    session.save.actions.len() + 1
+                )
+            })?;
+        }
+        Ok(session)
+    }
+
+    fn apply(&mut self, action: u32) -> Result<(), String> {
+        let index = action.checked_sub(1).ok_or("That move is unavailable.")?;
+        self.game.apply(index as usize)?;
+        self.save.actions.push(action);
+        Ok(())
+    }
+}
+
 #[derive(Default)]
 struct Engine {
-    session: Option<(wire::GameInfo, Game)>,
+    session: Option<Session>,
     revision: u64,
 }
 
@@ -293,72 +359,61 @@ impl Engine {
                     ..Default::default()
                 });
             }
-            Command::Start(request) => {
-                let ruleset = Ruleset::read(&request.ruleset)?;
-                let info = ruleset.info();
-                let game = match ruleset.rules {
-                    Rules::Solitaire(rules) => {
-                        Game::Solitaire(solitaire::Game::new(rules, request.seed), Vec::new())
-                    }
-                    Rules::Tableau(rules) => {
-                        Game::Tableau(tableau::Game::new(rules, request.seed), Vec::new())
-                    }
-                    Rules::Cribbage(rules) => {
-                        Game::Cribbage(Box::new(cribbage::Game::new(rules, request.seed)))
-                    }
-                    Rules::Trick(rules) => {
-                        Game::Trick(Box::new(trick::Game::new(rules, request.seed)))
-                    }
-                    Rules::Poker(rules) => Game::Poker(poker::Game::new(rules, request.seed)),
-                    Rules::Blackjack(rules) => {
-                        Game::Blackjack(blackjack::Game::new(rules, request.seed))
-                    }
-                    Rules::Rummy(rules) => {
-                        Game::Rummy(Box::new(rummy::Game::new(rules, request.seed)))
-                    }
-                    Rules::Partnership(rules) => {
-                        Game::Partnership(Box::new(partnership::Game::new(rules, request.seed)))
-                    }
-                };
-                self.revision += 1;
-                let table = game.view(self.revision, false);
-                self.session = Some((info.clone(), game));
+            Command::Start(request) => return Ok(self.open(Session::start(request)?)),
+            Command::Restore(save) => return Ok(self.open(Session::restore(save)?)),
+            Command::Checkpoint(_) => {
+                let save = &self.session.as_ref().ok_or("Start a game first.")?.save;
+                if save.encoded_len() > MAX_SAVED_GAME_BYTES {
+                    return Err("This game has too many moves to save.".into());
+                }
                 return Ok(wire::Reply {
-                    game: Some(info),
-                    table: Some(table),
+                    saved_game: Some(save.clone()),
                     ..Default::default()
                 });
             }
             Command::View(request) => {
-                let (_, game) = self.session.as_ref().ok_or("Start a game first.")?;
+                let game = &self.session.as_ref().ok_or("Start a game first.")?.game;
                 if request.agent && !game.actor_is_agent() {
                     return Err("It is your turn.".into());
                 }
                 game.view(self.revision, request.agent)
             }
             Command::Apply(request) => {
-                let (_, game) = self.session.as_mut().ok_or("Start a game first.")?;
+                let session = self.session.as_mut().ok_or("Start a game first.")?;
                 if request.revision != self.revision
-                    || game.actor_is_agent() != request.agent
+                    || session.game.actor_is_agent() != request.agent
                     || request.action == 0
                 {
                     return Err("That move no longer applies to this turn.".into());
                 }
-                game.apply(request.action as usize - 1)?;
+                session.apply(request.action)?;
                 self.revision += 1;
-                game.view(self.revision, false)
+                session.game.view(self.revision, false)
             }
             Command::Undo(_) => {
-                let (_, state) = self.session.as_mut().ok_or("Start a game first.")?;
-                state.undo()?;
+                let session = self.session.as_mut().ok_or("Start a game first.")?;
+                session.game.undo()?;
+                session.save.actions.pop();
                 self.revision += 1;
-                state.view(self.revision, false)
+                session.game.view(self.revision, false)
             }
         };
         Ok(wire::Reply {
             table: Some(table),
             ..Default::default()
         })
+    }
+
+    fn open(&mut self, session: Session) -> wire::Reply {
+        self.revision += 1;
+        let table = session.game.view(self.revision, false);
+        let info = session.info.clone();
+        self.session = Some(session);
+        wire::Reply {
+            game: Some(info),
+            table: Some(table),
+            ..Default::default()
+        }
     }
 }
 
@@ -394,7 +449,7 @@ pub unsafe extern "C" fn oj_call(
     unsafe {
         result.write(ptr::null_mut());
     }
-    if context.is_null() || data.is_null() || len == 0 || len > 128 * 1024 {
+    if context.is_null() || data.is_null() || len == 0 || len as usize > MAX_REQUEST_BYTES {
         return 1;
     }
     let input = unsafe { slice::from_raw_parts(data, len as usize) };
@@ -617,5 +672,127 @@ mod tests {
             .unwrap();
         assert_eq!(start.zones, restored.zones);
         assert!(!restored.can_undo);
+    }
+
+    #[test]
+    fn saved_games_restore_the_table_and_continue_across_all_rulesets() {
+        for file in std::fs::read_dir("../rulesets").unwrap() {
+            let file = file.unwrap().path();
+            if file.extension().and_then(|s| s.to_str()) != Some("json") {
+                continue;
+            }
+            let mut live = Engine::default();
+            let started = live
+                .command(Some(Command::Start(wire::Start {
+                    ruleset: std::fs::read_to_string(&file).unwrap(),
+                    seed: 91,
+                })))
+                .unwrap();
+            let mut table = started.table.unwrap();
+            for step in 0..40 {
+                let agent = table.agent_turn;
+                let view = if agent {
+                    live.command(Some(Command::View(wire::View { agent })))
+                        .unwrap()
+                        .table
+                        .unwrap()
+                } else {
+                    table.clone()
+                };
+                let save = live
+                    .command(Some(Command::Checkpoint(wire::Checkpoint {})))
+                    .unwrap()
+                    .saved_game
+                    .unwrap();
+                assert_eq!(save.actions.len(), step);
+                let save = wire::SavedGame::decode(save.encode_to_vec().as_slice()).unwrap();
+                let mut reopened = Engine::default();
+                let restored = reopened.command(Some(Command::Restore(save))).unwrap();
+                assert_eq!(restored.game, started.game);
+                let mut restored_table = restored.table.unwrap();
+                let restored_revision = restored_table.revision;
+                restored_table.revision = table.revision;
+                assert_eq!(restored_table, table, "{}", file.display());
+                let Some(action) = view.actions.last().map(|action| action.id) else {
+                    break;
+                };
+                let play = |engine: &mut Engine, revision| {
+                    let mut next = engine
+                        .command(Some(Command::Apply(wire::Apply {
+                            action,
+                            revision,
+                            agent,
+                        })))
+                        .unwrap()
+                        .table
+                        .unwrap();
+                    next.revision = table.revision + 1;
+                    next
+                };
+                let next = play(&mut live, table.revision);
+                assert_eq!(
+                    play(&mut reopened, restored_revision),
+                    next,
+                    "{}",
+                    file.display()
+                );
+                table = next;
+            }
+        }
+    }
+
+    #[test]
+    fn undo_removes_saved_moves_and_invalid_restore_keeps_the_live_table() {
+        let mut engine = Engine::default();
+        let initial = engine
+            .command(Some(Command::Start(wire::Start {
+                ruleset: include_str!("../../rulesets/klondike.json").into(),
+                seed: 91,
+            })))
+            .unwrap()
+            .table
+            .unwrap();
+        let draw = initial
+            .actions
+            .iter()
+            .find(|a| a.label == "Draw from stock")
+            .unwrap()
+            .id;
+        let after = engine
+            .command(Some(Command::Apply(wire::Apply {
+                action: draw,
+                agent: false,
+                revision: initial.revision,
+            })))
+            .unwrap()
+            .table
+            .unwrap();
+        let checkpoint = |engine: &mut Engine| {
+            engine
+                .command(Some(Command::Checkpoint(wire::Checkpoint {})))
+                .unwrap()
+                .saved_game
+                .unwrap()
+        };
+        let save = checkpoint(&mut engine);
+        let mut invalid = save.clone();
+        invalid.actions.push(u32::MAX);
+        assert!(engine.command(Some(Command::Restore(invalid))).is_err());
+        let mut unsupported = save.clone();
+        unsupported.version += 1;
+        assert!(engine.command(Some(Command::Restore(unsupported))).is_err());
+        assert_eq!(checkpoint(&mut engine), save);
+        assert_eq!(engine.revision, after.revision);
+
+        let mut restarted = Engine::default();
+        restarted.command(Some(Command::Restore(save))).unwrap();
+        let mut undone = restarted
+            .command(Some(Command::Undo(wire::Undo {})))
+            .unwrap()
+            .table
+            .unwrap();
+        undone.revision = initial.revision;
+        assert_eq!(undone, initial);
+        assert!(checkpoint(&mut restarted).actions.is_empty());
     }
 }
