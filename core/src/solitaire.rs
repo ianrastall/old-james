@@ -372,6 +372,47 @@ impl Game {
         actions
     }
 
+    pub fn hint_priority(&self, action: Move) -> u8 {
+        let Move::Transfer { from, start, to } = action else {
+            return 5;
+        };
+        if (FOUNDATION..CELL).contains(&from) {
+            return 8;
+        }
+        if (FOUNDATION..CELL).contains(&to) {
+            return 0;
+        }
+        if from >= COLUMN {
+            let source = &self.columns[(from - COLUMN) as usize];
+            if start > 0 && start == source.first_up {
+                return 1;
+            }
+        }
+        if to >= COLUMN {
+            let destination = &self.columns[(to - COLUMN) as usize];
+            if matches!(self.rules.foundations, Foundations::Runs { .. }) && from >= COLUMN {
+                let card = self.columns[(from - COLUMN) as usize].cards[start];
+                if destination
+                    .cards
+                    .last()
+                    .is_some_and(|top| top.suit == card.suit)
+                {
+                    return 2;
+                }
+            }
+            if from == WASTE || (CELL..COLUMN).contains(&from) {
+                return 3;
+            }
+            if !destination.cards.is_empty() {
+                return 4;
+            }
+            if start > 0 || self.rules.empty == Empty::Refill {
+                return 6;
+            }
+        }
+        7
+    }
+
     fn group_link(&self, upper: Card, lower: Card) -> bool {
         match self.rules.groups {
             Groups::Single => false,

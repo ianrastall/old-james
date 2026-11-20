@@ -23,6 +23,11 @@
                         <KeyboardAccelerator Key="Z" Modifiers="Control" />
                     </MenuFlyoutItem.KeyboardAccelerators>
                 </MenuFlyoutItem>
+                <MenuFlyoutItem x:Name="HintMenu" Text="Hint" Click="Hint_Click" IsEnabled="False">
+                    <MenuFlyoutItem.KeyboardAccelerators>
+                        <KeyboardAccelerator Key="H" Modifiers="Control" />
+                    </MenuFlyoutItem.KeyboardAccelerators>
+                </MenuFlyoutItem>
                 <MenuFlyoutSeparator />
                 <MenuFlyoutItem Text="Open ruleset folder" Click="OpenRulesets_Click" />
                 <MenuFlyoutItem Text="Reload games" Click="Reload_Click" />
@@ -34,6 +39,7 @@
             <ComboBox x:Name="Games" Width="255" AutomationProperties.Name="Game" SelectionChanged="Games_SelectionChanged" />
             <Button Content="New game" Click="NewDeal_Click" Style="{StaticResource AccentButtonStyle}" />
             <Button x:Name="UndoButton" Content="Undo" Click="Undo_Click" />
+            <Button x:Name="HintButton" Content="Hint" Click="Hint_Click" Visibility="Collapsed" />
             <Button Content="Rules" Click="Rules_Click" />
         </StackPanel>
         <StackPanel Grid.Row="2">
@@ -60,7 +66,11 @@
                 <TextBlock x:Name="ActionHeading" Text="Actions" TextWrapping="Wrap"
                            Style="{StaticResource JupiterPaneHeadingTextStyle}" />
                 <ScrollViewer Grid.Row="1" x:Name="ActionScroll" VerticalScrollBarVisibility="Auto">
-                    <StackPanel x:Name="Actions" Spacing="4" />
+                    <StackPanel Spacing="8">
+                        <TextBlock x:Name="HintText" Visibility="Collapsed" TextWrapping="Wrap"
+                                   AutomationProperties.LiveSetting="Polite" />
+                        <StackPanel x:Name="Actions" Spacing="4" />
+                    </StackPanel>
                 </ScrollViewer>
                 <TextBlock Grid.Row="2" x:Name="LogHeader" Text="Play log" Style="{StaticResource JupiterPaneHeadingTextStyle}" />
                 <ScrollViewer x:Name="LogScroll" Grid.Row="3" VerticalScrollBarVisibility="Auto">

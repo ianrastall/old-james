@@ -26,6 +26,9 @@ The original Klondike and Double Klondike entries draw one card at a time.
 Both Draw Three entries allow unlimited redeals. Rules for the individual
 variants are available from **Rules** in the app.
 
+In solitaire, select **Hint** or press **Ctrl+H** to see a suggested legal
+move. The hint uses the visible table and leaves the move for you to play.
+
 Variant references include [Yukon](https://pysolfc.sourceforge.io/doc/rules/yukon.html),
 [Australian Patience](https://www.goodsol.com/pgshelp/australian_patience.htm),
 [Rows of Four](https://www.goodsol.com/pgshelp/rows_of_four.htm),

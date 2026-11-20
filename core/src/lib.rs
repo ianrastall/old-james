@@ -155,8 +155,14 @@ impl Game {
             mut table: wire::Table,
             choices: Vec<Choice<T>>,
             can_undo: bool,
+            priority: impl Fn(&T) -> u8,
         ) -> wire::Table {
             table.can_undo = can_undo;
+            table.hint_action = choices
+                .iter()
+                .enumerate()
+                .min_by_key(|(_, choice)| priority(&choice.op))
+                .map_or(0, |(index, _)| index as u32 + 1);
             table.actions = to_wire(choices);
             if !table.finished && table.actions.is_empty() {
                 table.status.push_str(" · No legal moves");
@@ -166,10 +172,14 @@ impl Game {
         let can_act = self.actor_is_agent() == agent;
         let mut table = match self {
             Self::Solitaire(game, undo) => {
-                solitaire_table(game.table(), game.choices(), !undo.is_empty())
+                solitaire_table(game.table(), game.choices(), !undo.is_empty(), |action| {
+                    game.hint_priority(*action)
+                })
             }
             Self::Tableau(game, undo) => {
-                solitaire_table(game.table(), game.choices(), !undo.is_empty())
+                solitaire_table(game.table(), game.choices(), !undo.is_empty(), |action| {
+                    tableau::Game::hint_priority(*action)
+                })
             }
             Self::Cribbage(game) => {
                 let mut table = game.table(agent);
@@ -510,6 +520,7 @@ mod tests {
                         seed,
                     })))
                     .unwrap_or_else(|error| panic!("{}: {error}", file.display()));
+                let multiplayer = first.game.unwrap().multiplayer;
                 let mut table = first.table.unwrap();
                 for i in 0..190 {
                     for zone in &table.zones {
@@ -526,6 +537,20 @@ mod tests {
                             .table
                             .unwrap();
                         assert!(!table.actions.is_empty());
+                    }
+                    if multiplayer || table.actions.is_empty() {
+                        assert_eq!(table.hint_action, 0);
+                    } else {
+                        let hint = table
+                            .actions
+                            .iter()
+                            .find(|a| a.id == table.hint_action)
+                            .unwrap();
+                        let source = table.zones.iter().find(|z| z.id == hint.source).unwrap();
+                        assert!(
+                            hint.card == 0
+                                || source.cards.iter().any(|c| !c.hidden && c.id == hint.card)
+                        );
                     }
                     if table.actions.is_empty() {
                         break;

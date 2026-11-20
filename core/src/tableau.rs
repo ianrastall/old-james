@@ -180,6 +180,16 @@ impl Game {
         choices
     }
 
+    pub fn hint_priority(action: Move) -> u8 {
+        match action {
+            Move::Pair(from, to) if from != WASTE && to != WASTE => 0,
+            Move::Pair(..) | Move::ToWaste(_) => 1,
+            Move::Remove(from) if from != WASTE => 1,
+            Move::Remove(_) => 2,
+            Move::Draw | Move::Recycle => 3,
+        }
+    }
+
     fn take(&mut self, id: u32) -> Card {
         if id == WASTE {
             self.waste.pop().expect("selected waste card")

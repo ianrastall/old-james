@@ -36,6 +36,7 @@ public sealed partial class MainWindow : Window
     private GameEntry? _game;
     private Table? _table;
     private Card? _selected;
+    private CardAction? _hint;
     private ModelOpponent? _opponent;
     private CancellationTokenSource? _turn;
     private bool _loadingGames;
@@ -162,6 +163,7 @@ public sealed partial class MainWindow : Window
             CancelTurn();
             _modelStatus = null;
             _selected = null;
+            _hint = null;
             _drawCards.Clear();
             _game = game with { Info = reply.Game };
             _table = reply.Table;
@@ -197,10 +199,25 @@ public sealed partial class MainWindow : Window
         {
             _table = _core.Send(new Request { Undo = new Undo() }).Table;
             _selected = null;
+            _hint = null;
             SaveProgress();
             Render();
         }
         catch (InvalidOperationException ex) { ShowProblem("Undo could not be applied.", ex.Message); }
+    }
+
+    private void Hint_Click(object sender, RoutedEventArgs args)
+    {
+        if (_table is not { HintAction: > 0 } table) return;
+        var action = table.Actions.First(a => a.Id == table.HintAction);
+        _selected = null;
+        _hint = action;
+        Render();
+        ActionScroll.ChangeView(null, 0, null, disableAnimation: true);
+        var source = table.Zones.First(zone => zone.Id == action.Source);
+        var sourceCard = action.Card == 0 ? source.Cards.LastOrDefault()?.Id ?? 0 : action.Card;
+        if (_targets.TryGetValue((source.Id, sourceCard), out var control))
+            control.StartBringIntoView();
     }
 
     private async void Rules_Click(object sender, RoutedEventArgs args)
@@ -285,6 +302,10 @@ public sealed partial class MainWindow : Window
         LogHeader.Visibility = LogScroll.Visibility = _game.Info.Multiplayer ? Visibility.Visible : Visibility.Collapsed;
         Grid.SetRowSpan(ActionScroll, _game.Info.Multiplayer ? 1 : 3);
         UndoButton.IsEnabled = UndoMenu.IsEnabled = table.CanUndo;
+        HintButton.Visibility = _game.Info.Multiplayer ? Visibility.Collapsed : Visibility.Visible;
+        HintButton.IsEnabled = HintMenu.IsEnabled = table.HintAction != 0;
+        HintText.Visibility = _hint is null ? Visibility.Collapsed : Visibility.Visible;
+        HintText.Text = _hint is null ? string.Empty : $"Hint: {_hint.Label}";
         Status.Text = _modelStatus is null ? table.Status : $"{_modelStatus}   |   {table.Status}";
         PlayLog.Text = string.Join(Environment.NewLine, table.Events);
         LogScroll.ChangeView(null, double.MaxValue, null, disableAnimation: true);
@@ -343,8 +364,11 @@ public sealed partial class MainWindow : Window
             var canDraw = CanSelectForDraw(zone.Id, cardId);
             var markedForDraw = canDraw && _drawCards.Contains(cardId);
             var canClick = canDraw || hasChoice || (isTop && (targetAction is not null || directAction is not null));
+            var hintSource = _hint is { } hint && hint.Source == zone.Id && (hint.Card == 0 ? isTop : hint.Card == cardId);
+            var hintDestination = isTop && _hint?.Destination == zone.Id;
             var visual = Face(card, width, height, markedForDraw ||
-                (isTop && targetAction is not null) || _selected?.Id == cardId && cardId != 0);
+                (isTop && targetAction is not null) || _selected?.Id == cardId && cardId != 0,
+                hintSource || hintDestination);
             FrameworkElement element;
             var name = card is null ? zone.Label : $"{card.Name}, {zone.Label}";
             if (canClick)
@@ -369,6 +393,8 @@ public sealed partial class MainWindow : Window
                 if (card is { Hidden: false }) ToolTipService.SetToolTip(visual, name);
                 element = visual;
             }
+            if (hintSource || hintDestination)
+                AutomationProperties.SetItemStatus(element, hintSource ? "Suggested source" : "Suggested destination");
             element.Margin = new Thickness(positionX, positionY, 0, 0);
             element.HorizontalAlignment = HorizontalAlignment.Left;
             element.VerticalAlignment = VerticalAlignment.Top;
@@ -391,7 +417,7 @@ public sealed partial class MainWindow : Window
         return items;
     }
 
-    private Border Face(Card? card, double width, double height, bool highlighted)
+    private Border Face(Card? card, double width, double height, bool highlighted, bool hinted)
     {
         var border = new Border { Width = width, Height = height, CornerRadius = new CornerRadius(6) };
         if (card is not null)
@@ -405,7 +431,12 @@ public sealed partial class MainWindow : Window
             }
             border.Child = new Image { Source = image, Stretch = Stretch.Uniform };
         }
-        if (card is null || highlighted)
+        if (hinted)
+        {
+            border.BorderThickness = new Thickness(4);
+            border.BorderBrush = _accessibility.HighContrast ? Brush("JupiterPrimaryTextBrush") : new SolidColorBrush(_accent.Current);
+        }
+        else if (card is null || highlighted)
         {
             border.BorderThickness = new Thickness(highlighted ? 2 : 1);
             border.BorderBrush = highlighted ? new SolidColorBrush(_accent.Current) : _accessibility.HighContrast
@@ -445,6 +476,7 @@ public sealed partial class MainWindow : Window
             var moves = actions.Where(a => a.Card == card.Id).ToArray();
             if (_game.Info.Multiplayer && moves.Length == 1) { Apply(moves[0], _table.Revision, false); return; }
             _selected = _selected?.Id == card.Id || moves.Length == 0 ? null : card;
+            if (_hint?.Card != card.Id) _hint = null;
             Render();
             if (_targets.TryGetValue((zone, card.Id), out var control)) control.Focus(FocusState.Programmatic);
         }
@@ -488,6 +520,7 @@ public sealed partial class MainWindow : Window
         {
             _table = _core.Send(new Request { Apply = new Apply { Action = action.Id, Revision = revision, Agent = agent } }).Table;
             _selected = null;
+            _hint = null;
             _drawCards.Clear();
             if (!agent) Problem.IsOpen = false;
             SaveProgress();
