@@ -28,6 +28,7 @@
                         <KeyboardAccelerator Key="H" Modifiers="Control" />
                     </MenuFlyoutItem.KeyboardAccelerators>
                 </MenuFlyoutItem>
+                <MenuFlyoutItem x:Name="DealNumberMenu" Text="Deal number…" Click="DealNumber_Click" IsEnabled="False" />
                 <MenuFlyoutSeparator />
                 <MenuFlyoutItem Text="Open ruleset folder" Click="OpenRulesets_Click" />
                 <MenuFlyoutItem Text="Reload games" Click="Reload_Click" />

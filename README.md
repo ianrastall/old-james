@@ -29,6 +29,11 @@ variants are available from **Rules** in the app.
 In solitaire, select **Hint** or press **Ctrl+H** to see a suggested legal
 move. The hint uses the visible table and leaves the move for you to play.
 
+Open **Game → Deal number…** in solitaire to restart the current deal, play a
+specific deal number, or copy the displayed number. Share the number along with
+the game variant. For custom games, use the same ruleset file. Playing a
+numbered deal replaces that game's saved table.
+
 Variant references include [Yukon](https://pysolfc.sourceforge.io/doc/rules/yukon.html),
 [Australian Patience](https://www.goodsol.com/pgshelp/australian_patience.htm),
 [Rows of Four](https://www.goodsol.com/pgshelp/rows_of_four.htm),

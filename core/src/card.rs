@@ -88,6 +88,7 @@ pub fn deck(suits: &[Suit], copies: usize, seed: u64) -> Vec<Card> {
             }
         }
     }
+    // Saved games and numbered deals depend on this exact shuffle.
     cards.shuffle(&mut StdRng::seed_from_u64(seed));
     cards
 }

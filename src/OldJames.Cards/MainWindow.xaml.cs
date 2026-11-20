@@ -3,12 +3,16 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using OldJames.Cards.Protocol;
 using OldJames.Interop;
+using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.UI.ViewManagement;
 using WinRT.Interop;
@@ -35,6 +39,7 @@ public sealed partial class MainWindow : Window
     private readonly HashSet<uint> _drawCards = [];
     private GameEntry? _game;
     private Table? _table;
+    private Start? _solitaireDeal;
     private Card? _selected;
     private CardAction? _hint;
     private ModelOpponent? _opponent;
@@ -130,7 +135,7 @@ public sealed partial class MainWindow : Window
         finally { _loadingGames = false; }
     }
 
-    private void OpenGame(bool resume)
+    private void OpenGame(bool resume, Start? opening = null)
     {
         if (Games.SelectedItem is not GameEntry game) return;
 
@@ -141,7 +146,10 @@ public sealed partial class MainWindow : Window
             try
             {
                 if (SavedGames.Load(game.File) is { } saved)
+                {
                     restored = _core.Send(new Request { Restore = saved });
+                    opening = saved.Start;
+                }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
             {
@@ -151,14 +159,12 @@ public sealed partial class MainWindow : Window
 
         try
         {
-            var reply = restored ?? _core.Send(new Request
+            opening ??= new Start
             {
-                Start = new Start
-                {
-                    Ruleset = game.Json,
-                    Seed = BitConverter.ToUInt64(RandomNumberGenerator.GetBytes(sizeof(ulong)))
-                }
-            });
+                Ruleset = game.Json,
+                Seed = BitConverter.ToUInt64(RandomNumberGenerator.GetBytes(sizeof(ulong)))
+            };
+            var reply = restored ?? _core.Send(new Request { Start = opening });
 
             CancelTurn();
             _modelStatus = null;
@@ -166,6 +172,7 @@ public sealed partial class MainWindow : Window
             _hint = null;
             _drawCards.Clear();
             _game = game with { Info = reply.Game };
+            _solitaireDeal = reply.Game.Multiplayer ? null : opening;
             _table = reply.Table;
             _canSave = restoreError is null;
             SaveProblem.IsOpen = !_canSave;
@@ -186,6 +193,65 @@ public sealed partial class MainWindow : Window
     }
 
     private void NewDeal_Click(object sender, RoutedEventArgs args) => OpenGame(resume: false);
+
+    private async void DealNumber_Click(object sender, RoutedEventArgs args)
+    {
+        if (_game is not { } game || _solitaireDeal is not { } current) return;
+        var input = new TextBox { Header = "Deal number", Text = current.Seed.ToString(CultureInfo.InvariantCulture) };
+        var message = new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed };
+        AutomationProperties.SetLiveSetting(message, AutomationLiveSetting.Polite);
+        var content = new StackPanel { Spacing = 8 };
+        content.Children.Add(new TextBlock
+        {
+            Text = "Use the same number to restart this deal, or enter another number. Playing a deal replaces this game's saved table.",
+            TextWrapping = TextWrapping.Wrap
+        });
+        content.Children.Add(input);
+        content.Children.Add(message);
+        var dialog = new ContentDialog
+        {
+            Title = $"{game.Info.Name} deal",
+            Content = content,
+            PrimaryButtonText = "Play deal",
+            SecondaryButtonText = "Copy number",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = Root.XamlRoot
+        };
+        bool TryReadNumber(out ulong seed) => ulong.TryParse(input.Text.Trim(), NumberStyles.None,
+            CultureInfo.InvariantCulture, out seed);
+        void ShowMessage(string text)
+        {
+            message.Text = text;
+            message.Visibility = text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        input.TextChanged += (_, _) =>
+        {
+            var valid = TryReadNumber(out _);
+            dialog.IsPrimaryButtonEnabled = dialog.IsSecondaryButtonEnabled = valid;
+            ShowMessage(valid ? string.Empty : "Enter a whole number from 0 to 18446744073709551615.");
+        };
+        dialog.SecondaryButtonClick += (_, click) =>
+        {
+            click.Cancel = true;
+            if (!TryReadNumber(out var number)) return;
+            try
+            {
+                var data = new DataPackage();
+                data.SetText(number.ToString(CultureInfo.InvariantCulture));
+                Clipboard.SetContent(data);
+                Clipboard.Flush();
+                ShowMessage("Deal number copied.");
+            }
+            catch (COMException)
+            {
+                ShowMessage("The deal number could not be copied.");
+            }
+        };
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary && !_closed && TryReadNumber(out var seed))
+            OpenGame(resume: false, opening: seed == current.Seed ? current : new Start { Ruleset = game.Json, Seed = seed });
+    }
 
     private void Games_SelectionChanged(object sender, SelectionChangedEventArgs args)
     {
@@ -302,6 +368,7 @@ public sealed partial class MainWindow : Window
         LogHeader.Visibility = LogScroll.Visibility = _game.Info.Multiplayer ? Visibility.Visible : Visibility.Collapsed;
         Grid.SetRowSpan(ActionScroll, _game.Info.Multiplayer ? 1 : 3);
         UndoButton.IsEnabled = UndoMenu.IsEnabled = table.CanUndo;
+        DealNumberMenu.IsEnabled = _solitaireDeal is not null;
         HintButton.Visibility = _game.Info.Multiplayer ? Visibility.Collapsed : Visibility.Visible;
         HintButton.IsEnabled = HintMenu.IsEnabled = table.HintAction != 0;
         HintText.Visibility = _hint is null ? Visibility.Collapsed : Visibility.Visible;

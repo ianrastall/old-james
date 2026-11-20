@@ -505,6 +505,43 @@ mod tests {
     use wire::request::Command;
 
     #[test]
+    fn numbered_deals_keep_their_opening_layouts() {
+        let cases: [(&str, &[u32]); 3] = [
+            (
+                include_str!("../../rulesets/klondike.json"),
+                &[22, 17, 30, 51, 46, 52, 47],
+            ),
+            (
+                include_str!("../../rulesets/double-klondike.json"),
+                &[100, 25, 42, 29, 76, 18, 86, 19, 9],
+            ),
+            (
+                include_str!("../../rulesets/tripeaks.json"),
+                &[12, 51, 7, 13, 39, 46, 34, 43, 52, 16, 47],
+            ),
+        ];
+        let mut engine = Engine::default();
+        for (ruleset, expected) in cases {
+            let table = engine
+                .command(Some(Command::Start(wire::Start {
+                    ruleset: ruleset.into(),
+                    seed: 42,
+                })))
+                .unwrap()
+                .table
+                .unwrap();
+            let visible: Vec<_> = table
+                .zones
+                .iter()
+                .flat_map(|z| &z.cards)
+                .filter(|c| !c.hidden)
+                .map(|c| c.id)
+                .collect();
+            assert_eq!(visible, expected);
+        }
+    }
+
+    #[test]
     fn bundled_rulesets_are_playable_and_filter_hidden_cards() {
         for file in std::fs::read_dir("../rulesets").unwrap() {
             let file = file.unwrap().path();
