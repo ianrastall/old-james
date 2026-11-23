@@ -1,7 +1,7 @@
 [Setup]
 AppId={{DB656425-A6DD-43CB-9B71-61C5514A534E}
 AppName=Old James
-AppVersion=0.7.0
+AppVersion=0.7.1
 AppPublisher=Ian Rastall
 DefaultDirName={localappdata}\Programs\Old James Cards
 DisableProgramGroupPage=yes

@@ -655,7 +655,10 @@ public sealed partial class MainWindow : Window
                         _opponent = null;
                         _modelStatus = "Loading local model…";
                         Render();
-                        var runtime = await ModelOpponent.OpenAsync(_preferences.ModelFile, turn.Token);
+                        // Start the server off the UI thread: process start-up work must not run
+                        // inside XAML callbacks such as Loaded, which fail fast on re-entrancy.
+                        var modelFile = _preferences.ModelFile;
+                        var runtime = await Task.Run(() => ModelOpponent.OpenAsync(modelFile, turn.Token), turn.Token);
                         if (!ReferenceEquals(_turn, turn)) { runtime.Dispose(); return; }
                         _opponent = runtime;
                     }

@@ -14,6 +14,8 @@ internal sealed class ModelOpponent : IDisposable
     private readonly Process _server;
     private readonly HttpClient _http;
     private string? _lastError;
+    private volatile bool _started;
+    private volatile bool _exited;
 
     private ModelOpponent(Process server, HttpClient http)
     {
@@ -25,9 +27,13 @@ internal sealed class ModelOpponent : IDisposable
                 || line.Contains("failed", StringComparison.OrdinalIgnoreCase)))
                 Volatile.Write(ref _lastError, line);
         };
+        // Process.HasExited waits on the process handle, which pumps messages on the UI thread
+        // and lets XAML re-enter. Track exit through the Exited event instead.
+        server.EnableRaisingEvents = true;
+        server.Exited += (_, _) => _exited = true;
     }
 
-    public bool IsRunning => !_server.HasExited;
+    public bool IsRunning => _started && !_exited;
 
     public static async Task<ModelOpponent> OpenAsync(string? modelFile, CancellationToken cancellation)
     {
@@ -75,6 +81,8 @@ internal sealed class ModelOpponent : IDisposable
         {
             if (!server.Start())
                 throw new InvalidOperationException("The local model runtime could not start.");
+            opponent._started = true;
+            ServerJob.Assign(server);
             server.BeginErrorReadLine();
             server.BeginOutputReadLine();
             await opponent.WaitUntilReadyAsync(cancellation).ConfigureAwait(false);
@@ -93,7 +101,7 @@ internal sealed class ModelOpponent : IDisposable
         deadline.CancelAfter(TimeSpan.FromMinutes(4));
         try
         {
-            while (!_server.HasExited)
+            while (!_exited)
             {
                 try
                 {
@@ -198,7 +206,7 @@ internal sealed class ModelOpponent : IDisposable
         _http.Dispose();
         try
         {
-            if (!_server.HasExited)
+            if (IsRunning)
                 _server.Kill(entireProcessTree: true);
         }
         catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
