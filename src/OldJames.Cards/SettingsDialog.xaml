@@ -13,7 +13,7 @@
             <TextBox x:Name="ModelPath" Header="Local GGUF model" TextWrapping="NoWrap" />
             <Button Grid.Column="1" Content="Browse" Click="Browse_Click" VerticalAlignment="Bottom" />
         </Grid>
-        <TextBlock Text="Hearts, Spades and Euchre have built-in opponents and need no model. Other multiplayer games use this model for the other seats."
+        <TextBlock Text="Hearts, Spades, Euchre, Rummy and Gin Rummy have built-in opponents and need no model. Other multiplayer games use this model for the other seats."
                    Style="{StaticResource JupiterCaptionTextStyle}" TextWrapping="Wrap" />
         <StackPanel Spacing="12">
             <TextBlock Text="Appearance" Style="{StaticResource JupiterSectionHeadingTextStyle}" />

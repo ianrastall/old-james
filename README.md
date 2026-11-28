@@ -43,20 +43,22 @@ Variant references include [Yukon](https://pysolfc.sourceforge.io/doc/rules/yuko
 [TriPeaks](https://pysolfc.sourceforge.io/doc/rules/threepeaks.html), and
 [Cribbage](https://www.cribbage.org/NewSite/rules/).
 
-Hearts, Spades and Euchre have built-in opponents that move without a model.
-Each seat decides from its own hand, the cards it passed, the bidding and the
-cards already played. In Hearts and Spades, a seat chooses a card by dealing the
-unseen cards many times in ways that fit what it has seen, playing each legal
-card out to the end of the deal, and keeping the card with the best average
-result. On your turn in these games, select **Hint** or press **Ctrl+H** to see
-what the built-in player would do. The suggested card or action is marked and
-left for you to play.
+Hearts, Spades, Euchre, Basic Rummy and Gin Rummy have built-in opponents that
+move without a model. Each seat decides from its own hand, the cards it passed,
+the bidding and the cards already played. In Hearts and Spades, a seat chooses a
+card by dealing the unseen cards many times in ways that fit what it has seen,
+playing each legal card out to the end of the deal, and keeping the card with
+the best average result. In the Rummy games, Old James keeps the hand with the
+lowest expected deadwood after the next draw and avoids discarding cards you
+have taken from the discard pile or could lay off. On your turn in these games,
+select **Hint** or press **Ctrl+H** to see what the built-in player would do.
+The suggested card or action is marked and left for you to play.
 
 The **Settings** dialog accepts a local GGUF model for the other multiplayer
 games. The installer bundles llama.cpp. Each opponent receives its own visible
 position, the selected rules, public play, and the legal actions for its
 current turn. If inference pauses, use **Resume opponent** to retry. Hearts,
-Spades, Euchre, Blackjack and solitaire run without a model.
+Spades, Euchre, the Rummy games, Blackjack and solitaire run without a model.
 
 Each game saves its table locally after every move, including solitaire undo
 history. Select a game to return to its table. Reopening Old James returns to

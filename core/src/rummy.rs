@@ -5,6 +5,8 @@ use crate::{
 };
 use serde::Deserialize;
 
+mod advice;
+
 const STOCK: u32 = 1;
 const DISCARD: u32 = 2;
 const HAND: u32 = 3;
@@ -45,9 +47,14 @@ impl Rules {
             Ok(())
         }
     }
+
+    /// Both modes have a built-in opponent.
+    pub fn advised(&self) -> bool {
+        true
+    }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Move {
     Pass,
     Draw,
@@ -81,6 +88,9 @@ pub struct Game {
     showed: [bool; 2],
     had_meld: bool,
     taken: Option<u32>,
+    // Cards each seat took from the discard pile and discarded this deal.
+    picked: [Vec<Card>; 2],
+    tossed: [Vec<Card>; 2],
     must_draw: bool,
     phase: Phase,
     scores: [u32; 2],
@@ -104,6 +114,8 @@ impl Game {
             showed: [false; 2],
             had_meld: false,
             taken: None,
+            picked: Default::default(),
+            tossed: Default::default(),
             must_draw: false,
             phase: Phase::Between,
             scores: [0; 2],
@@ -133,6 +145,8 @@ impl Game {
         self.showed = [false; 2];
         self.had_meld = false;
         self.taken = None;
+        self.picked = Default::default();
+        self.tossed = Default::default();
         self.must_draw = false;
         self.reveal = false;
         self.events.clear();
@@ -291,6 +305,7 @@ impl Game {
                 let card = if take {
                     let card = self.discard.pop().unwrap();
                     self.events.push(format!("{name} takes {}", card.short()));
+                    self.picked[seat].push(card);
                     card
                 } else {
                     if self.stock.is_empty() {
@@ -308,6 +323,7 @@ impl Game {
             Move::Discard(id) | Move::Knock(id) => {
                 let card = self.remove(id);
                 self.discard.push(card);
+                self.tossed[seat].push(card);
                 self.events
                     .push(format!("{name} discards {}", card.short()));
                 if matches!(action, Move::Knock(_)) {

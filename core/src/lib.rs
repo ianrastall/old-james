@@ -95,6 +95,7 @@ impl Ruleset {
             hints: match &self.rules {
                 Rules::Solitaire(_) | Rules::Tableau(_) => true,
                 Rules::Trick(rules) => rules.advised(),
+                Rules::Rummy(rules) => rules.advised(),
                 Rules::Partnership(rules) => rules.advised(),
                 _ => false,
             },
@@ -235,11 +236,8 @@ impl Game {
                 table
             }
             Self::Rummy(game) => {
-                let mut table = game.table(agent);
-                if can_act {
-                    table.actions = to_wire(game.choices());
-                }
-                table
+                let table = game.table(agent);
+                advised_table(table, game.choices(), can_act, agent, || game.advise())
             }
             Self::Partnership(game) => {
                 let table = game.table(agent);
@@ -581,7 +579,7 @@ mod tests {
                     .unwrap_or_else(|error| panic!("{}: {error}", file.display()));
                 let info = first.game.unwrap();
                 let multiplayer = info.multiplayer;
-                let built_in = ["euchre", "hearts", "spades"]
+                let built_in = ["euchre", "hearts", "spades", "rummy", "gin-rummy"]
                     .contains(&file.file_stem().unwrap().to_str().unwrap());
                 assert_eq!(info.hints, !multiplayer || built_in, "{}", file.display());
                 let mut table = first.table.unwrap();
