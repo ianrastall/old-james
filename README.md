@@ -26,6 +26,9 @@ The original Klondike and Double Klondike entries draw one card at a time.
 Both Draw Three entries allow unlimited redeals. Rules for the individual
 variants are available from **Rules** in the app.
 
+In Basic Rummy the discards are turned over once when the stock runs out. If the
+stock runs out again, the deal ends with no score.
+
 In solitaire, select **Hint** or press **Ctrl+H** to see a suggested legal
 move. The hint uses the visible table and leaves the move for you to play.
 

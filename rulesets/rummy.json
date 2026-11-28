@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "Rummy · Basic",
-  "summary": "Two players, ten cards each. Draw from stock or take the top discard. Meld three or four of a rank or a run of at least three in one suit, or extend any exposed meld. Ace is low. Discard one to end the turn; the discard just taken may not be returned immediately. An empty stock can be replenished by turning the discards over. Going out scores the opposing hand's pip values, with face cards worth ten. Going out without melding on a previous turn scores double. Play to 100.",
+  "summary": "Two players, ten cards each. Draw from stock or take the top discard. Meld three or four of a rank or a run of at least three in one suit, or extend any exposed meld. Ace is low. Discard one to end the turn; the discard just taken may not be returned immediately. When the stock runs out, the discards are turned over once to form a new stock; if it runs out again, the deal ends with no score. Going out scores the opposing hand's pip values, with face cards worth ten. Going out without melding on a previous turn scores double. Play to 100.",
   "artwork": "poker",
   "rules": { "type": "rummy", "mode": "basic", "target": 100 }
 }

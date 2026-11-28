@@ -459,6 +459,69 @@ mod tests {
         assert_eq!(melded, 2);
     }
 
+    #[test]
+    fn rummy_deal_ends_without_score_when_the_stock_runs_out_twice() {
+        let mut g = position(
+            Mode::Basic,
+            &[
+                (H, 2),
+                (C, 4),
+                (D, 6),
+                (S, 8),
+                (H, 10),
+                (C, 12),
+                (D, 1),
+                (S, 3),
+                (H, 5),
+                (C, 7),
+            ],
+            (D, 9),
+        );
+        g.scores = [30, 40];
+        g.dealer = 1;
+        // Leave one card in the stock and pretend it was turned over before.
+        let last = g.stock.split_off(g.stock.len() - 1);
+        g.discard.splice(0..0, g.stock.drain(..));
+        g.stock = last;
+        g.turned = true;
+        g.apply(Move::Draw);
+        assert!(g.stock.is_empty());
+        let throw = g.hands[1][0].id;
+        g.apply(Move::Discard(throw));
+        assert!(g.phase == Phase::Between);
+        assert_eq!(g.scores, [30, 40]);
+        assert_eq!(g.dealer, 0);
+        assert_eq!(g.result, "Stock ran out twice · no score");
+    }
+
+    #[test]
+    fn rummy_turns_the_discards_over_once() {
+        let mut g = position(
+            Mode::Basic,
+            &[
+                (H, 2),
+                (C, 4),
+                (D, 6),
+                (S, 8),
+                (H, 10),
+                (C, 12),
+                (D, 1),
+                (S, 3),
+                (H, 5),
+                (C, 7),
+            ],
+            (D, 9),
+        );
+        g.discard.splice(0..0, g.stock.drain(..));
+        let pile = g.discard.len();
+        g.apply(Move::Draw);
+        assert!(g.turned);
+        assert_eq!(g.stock.len(), pile - 1);
+        let throw = g.hands[1][0].id;
+        g.apply(Move::Discard(throw));
+        assert!(g.phase == Phase::Draw);
+    }
+
     fn random(g: &Game, rng: &mut StdRng) -> Move {
         let choices = g.choices();
         choices[rng.random_range(0..choices.len())].op
@@ -517,13 +580,7 @@ mod tests {
 
     /// Plays whole matches; the built-in player takes seat 1. Returns the
     /// matches it won and the points each side scored.
-    fn play(
-        mode: Mode,
-        games: u64,
-        stall_ok: bool,
-        other: impl Fn(&Game, &mut StdRng) -> Move,
-    ) -> (u32, u32, [u32; 2]) {
-        let mut stalled = 0;
+    fn play(mode: Mode, games: u64, other: impl Fn(&Game, &mut StdRng) -> Move) -> (u32, [u32; 2]) {
         let mut rng = StdRng::seed_from_u64(5);
         let mut won = 0;
         let mut points = [0; 2];
@@ -546,24 +603,18 @@ mod tests {
                 );
                 g.apply(pick);
             }
-            if g.phase != Phase::Finished {
-                // Basic Rummy turns the stock over forever, so two players who
-                // each hold a card the other needs can stall.
-                assert!(stall_ok, "match {seed} did not finish");
-                stalled += 1;
-                continue;
-            }
+            assert!(g.phase == Phase::Finished, "match {seed} did not finish");
             won += u32::from(g.scores[1] > g.scores[0]);
             points[0] += g.scores[0];
             points[1] += g.scores[1];
         }
-        (won, stalled, points)
+        (won, points)
     }
 
     #[test]
     fn beats_random_play_in_both_games() {
         for mode in [Mode::Gin, Mode::Basic] {
-            let (won, _, points) = play(mode, 10, false, random);
+            let (won, points) = play(mode, 10, random);
             println!("{mode:?} against random play: won {won}/10, points {points:?}");
             assert_eq!(won, 10);
         }
@@ -574,10 +625,8 @@ mod tests {
     fn strength_against_greedy_play() {
         for mode in [Mode::Gin, Mode::Basic] {
             let games = 200;
-            let (won, stalled, points) = play(mode, games, true, greedy);
-            println!(
-                "{mode:?} against greedy play: won {won}/{games}, stalled {stalled}, points {points:?}"
-            );
+            let (won, points) = play(mode, games, greedy);
+            println!("{mode:?} against greedy play: won {won}/{games}, points {points:?}");
         }
     }
 

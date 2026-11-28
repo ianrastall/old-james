@@ -92,6 +92,8 @@ pub struct Game {
     picked: [Vec<Card>; 2],
     tossed: [Vec<Card>; 2],
     must_draw: bool,
+    // Basic Rummy: the discards have been turned over once this deal.
+    turned: bool,
     phase: Phase,
     scores: [u32; 2],
     events: Vec<String>,
@@ -117,6 +119,7 @@ impl Game {
             picked: Default::default(),
             tossed: Default::default(),
             must_draw: false,
+            turned: false,
             phase: Phase::Between,
             scores: [0; 2],
             events: vec![],
@@ -148,6 +151,7 @@ impl Game {
         self.picked = Default::default();
         self.tossed = Default::default();
         self.must_draw = false;
+        self.turned = false;
         self.reveal = false;
         self.events.clear();
         self.phase = if self.rules.mode == Mode::Gin {
@@ -310,6 +314,7 @@ impl Game {
                 } else {
                     if self.stock.is_empty() {
                         self.stock.extend(self.discard.drain(..).rev());
+                        self.turned = true;
                     }
                     self.events.push(format!("{name} draws from stock"));
                     self.stock.pop().unwrap()
@@ -331,9 +336,9 @@ impl Game {
                 } else if self.hands[seat].is_empty() {
                     self.basic_out();
                 } else if self.rules.mode == Mode::Gin && self.stock.len() <= 2 {
-                    self.result = "Stock reduced to two · no score".into();
-                    self.dealer = 1 - self.dealer;
-                    self.phase = Phase::Between;
+                    self.no_score("Stock reduced to two · no score");
+                } else if self.rules.mode == Mode::Basic && self.turned && self.stock.is_empty() {
+                    self.no_score("Stock ran out twice · no score");
                 } else {
                     self.phase = Phase::Draw;
                     self.must_draw = false;
@@ -374,6 +379,12 @@ impl Game {
         let hand = &mut self.hands[self.turn];
         let index = hand.iter().position(|c| c.id == id).unwrap();
         hand.remove(index)
+    }
+
+    fn no_score(&mut self, result: &str) {
+        self.result = result.into();
+        self.dealer = 1 - self.dealer;
+        self.phase = Phase::Between;
     }
 
     fn basic_out(&mut self) {
