@@ -94,6 +94,7 @@ impl Ruleset {
             multiplayer: !matches!(self.rules, Rules::Solitaire(_) | Rules::Tableau(_)),
             hints: match &self.rules {
                 Rules::Solitaire(_) | Rules::Tableau(_) => true,
+                Rules::Trick(rules) => rules.advised(),
                 Rules::Partnership(rules) => rules.advised(),
                 _ => false,
             },
@@ -174,6 +175,28 @@ impl Game {
             }
             table
         }
+        // The same advice plays the other seats and serves as the person's hint.
+        fn advised_table<T: PartialEq>(
+            mut table: wire::Table,
+            choices: Vec<Choice<T>>,
+            can_act: bool,
+            agent: bool,
+            advise: impl FnOnce() -> Option<T>,
+        ) -> wire::Table {
+            if !can_act {
+                return table;
+            }
+            let advised = advise()
+                .and_then(|advice| choices.iter().position(|c| c.op == advice))
+                .map_or(0, |index| index as u32 + 1);
+            if agent {
+                table.agent_action = advised;
+            } else {
+                table.hint_action = advised;
+            }
+            table.actions = to_wire(choices);
+            table
+        }
         let can_act = self.actor_is_agent() == agent;
         let mut table = match self {
             Self::Solitaire(game, undo) => {
@@ -194,11 +217,8 @@ impl Game {
                 table
             }
             Self::Trick(game) => {
-                let mut table = game.table(agent);
-                if can_act {
-                    table.actions = to_wire(game.choices());
-                }
-                table
+                let table = game.table(agent);
+                advised_table(table, game.choices(), can_act, agent, || game.advise())
             }
             Self::Poker(game) => {
                 let mut table = game.table(agent);
@@ -222,22 +242,8 @@ impl Game {
                 table
             }
             Self::Partnership(game) => {
-                let mut table = game.table(agent);
-                if can_act {
-                    let choices = game.choices();
-                    // The same advice plays the other seats and serves as the person's hint.
-                    let advised = game
-                        .advise()
-                        .and_then(|advice| choices.iter().position(|c| c.op == advice))
-                        .map_or(0, |index| index as u32 + 1);
-                    if agent {
-                        table.agent_action = advised;
-                    } else {
-                        table.hint_action = advised;
-                    }
-                    table.actions = to_wire(choices);
-                }
-                table
+                let table = game.table(agent);
+                advised_table(table, game.choices(), can_act, agent, || game.advise())
             }
         };
         table.revision = revision;
@@ -575,7 +581,8 @@ mod tests {
                     .unwrap_or_else(|error| panic!("{}: {error}", file.display()));
                 let info = first.game.unwrap();
                 let multiplayer = info.multiplayer;
-                let built_in = file.file_stem().unwrap() == "euchre";
+                let built_in = ["euchre", "hearts", "spades"]
+                    .contains(&file.file_stem().unwrap().to_str().unwrap());
                 assert_eq!(info.hints, !multiplayer || built_in, "{}", file.display());
                 let mut table = first.table.unwrap();
                 for i in 0..190 {

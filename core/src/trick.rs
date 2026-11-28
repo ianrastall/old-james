@@ -5,6 +5,8 @@ use crate::{
 };
 use serde::Deserialize;
 
+mod advice;
+
 const HAND: u32 = 10;
 const TRICK: u32 = 20;
 const SEATS: [&str; 4] = ["South", "West", "North", "East"];
@@ -32,6 +34,11 @@ impl Rules {
             _ => Err("Invalid trick-taking score target.".into()),
         }
     }
+
+    /// Hearts and Spades have built-in opponents; Bridge does not yet.
+    pub fn advised(&self) -> bool {
+        self.mode != Mode::Bridge
+    }
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -43,7 +50,7 @@ enum Phase {
     Finished,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Move {
     Card(u32),
     Bid(u8),
@@ -93,7 +100,11 @@ pub struct Game {
     turn: usize,
     hands: [Vec<Card>; 4],
     passed: [Vec<Card>; 4],
+    // Cards each seat passed this deal, kept after the exchange.
+    gave: [Vec<Card>; 4],
     trick: Vec<(usize, Card)>,
+    // Every card played this deal, in order; each run of four is one trick.
+    played: Vec<(usize, Card)>,
     last_trick: Vec<(usize, Card)>,
     taken: [Vec<Card>; 4],
     tricks: [i32; 4],
@@ -119,7 +130,9 @@ impl Game {
             turn: 0,
             hands: Default::default(),
             passed: Default::default(),
+            gave: Default::default(),
             trick: Vec::new(),
+            played: Vec::new(),
             last_trick: Vec::new(),
             taken: Default::default(),
             tricks: [0; 4],
@@ -155,6 +168,8 @@ impl Game {
         self.last_trick.clear();
         self.taken = Default::default();
         self.passed = Default::default();
+        self.gave = Default::default();
+        self.played.clear();
         self.tricks = [0; 4];
         self.bids = [-1; 4];
         self.contract = None;
@@ -353,6 +368,7 @@ impl Game {
         self.turn = (self.turn + 1) % 4;
         if self.passed.iter().all(|cards| cards.len() == 3) {
             let offset = self.pass_offset();
+            self.gave = self.passed.clone();
             for (i, cards) in self.passed.iter_mut().enumerate() {
                 let receiver = (i + offset) % 4;
                 self.hands[receiver].append(cards);
@@ -419,6 +435,7 @@ impl Game {
         self.events
             .push(format!("{} plays {}", SEATS[self.turn], card.short()));
         self.trick.push((self.turn, card));
+        self.played.push((self.turn, card));
         self.turn = (self.turn + 1) % 4;
         if self.trick.len() != 4 {
             return;
