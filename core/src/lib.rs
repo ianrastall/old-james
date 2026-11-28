@@ -92,6 +92,11 @@ impl Ruleset {
             }
             .into(),
             multiplayer: !matches!(self.rules, Rules::Solitaire(_) | Rules::Tableau(_)),
+            hints: match &self.rules {
+                Rules::Solitaire(_) | Rules::Tableau(_) => true,
+                Rules::Partnership(rules) => rules.advised(),
+                _ => false,
+            },
         }
     }
 }
@@ -220,11 +225,15 @@ impl Game {
                 let mut table = game.table(agent);
                 if can_act {
                     let choices = game.choices();
+                    // The same advice plays the other seats and serves as the person's hint.
+                    let advised = game
+                        .advise()
+                        .and_then(|advice| choices.iter().position(|c| c.op == advice))
+                        .map_or(0, |index| index as u32 + 1);
                     if agent {
-                        table.agent_action = game
-                            .advise()
-                            .and_then(|advice| choices.iter().position(|c| c.op == advice))
-                            .map_or(0, |index| index as u32 + 1);
+                        table.agent_action = advised;
+                    } else {
+                        table.hint_action = advised;
                     }
                     table.actions = to_wire(choices);
                 }
@@ -564,7 +573,10 @@ mod tests {
                         seed,
                     })))
                     .unwrap_or_else(|error| panic!("{}: {error}", file.display()));
-                let multiplayer = first.game.unwrap().multiplayer;
+                let info = first.game.unwrap();
+                let multiplayer = info.multiplayer;
+                let built_in = file.file_stem().unwrap() == "euchre";
+                assert_eq!(info.hints, !multiplayer || built_in, "{}", file.display());
                 let mut table = first.table.unwrap();
                 for i in 0..190 {
                     for zone in &table.zones {
@@ -582,25 +594,31 @@ mod tests {
                             .table
                             .unwrap();
                         assert!(!table.actions.is_empty());
-                        let built_in = file.file_stem().unwrap() == "euchre";
+                        assert_eq!(table.hint_action, 0);
                         assert_eq!(table.agent_action != 0, built_in, "{}", file.display());
                         if built_in {
                             assert!(table.actions.iter().any(|a| a.id == table.agent_action));
                         }
                     }
-                    if multiplayer || table.actions.is_empty() {
+                    if agent || (multiplayer && !built_in) || table.actions.is_empty() {
                         assert_eq!(table.hint_action, 0);
+                    } else if multiplayer && table.actions.len() == 1 {
+                        // "Next deal" needs no suggestion.
+                        assert!(table.hint_action <= 1);
                     } else {
                         let hint = table
                             .actions
                             .iter()
                             .find(|a| a.id == table.hint_action)
                             .unwrap();
-                        let source = table.zones.iter().find(|z| z.id == hint.source).unwrap();
-                        assert!(
-                            hint.card == 0
-                                || source.cards.iter().any(|c| !c.hidden && c.id == hint.card)
-                        );
+                        // Bidding choices such as Pass have no source card.
+                        if hint.card != 0 || !multiplayer {
+                            let source = table.zones.iter().find(|z| z.id == hint.source).unwrap();
+                            assert!(
+                                hint.card == 0
+                                    || source.cards.iter().any(|c| !c.hidden && c.id == hint.card)
+                            );
+                        }
                     }
                     if table.actions.is_empty() {
                         break;

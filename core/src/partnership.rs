@@ -33,6 +33,11 @@ impl Rules {
             Err("Invalid partnership score target.".into())
         }
     }
+
+    /// Whether the engine can choose moves for this game.
+    pub fn advised(&self) -> bool {
+        self.mode == Mode::Euchre
+    }
 }
 
 #[derive(Clone, Copy, PartialEq)]

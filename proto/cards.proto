@@ -38,6 +38,8 @@ message GameInfo {
   string rules = 2;
   bool multiplayer = 3;
   string artwork = 4;
+  // The game can suggest a move for the person's seat.
+  bool hints = 5;
 }
 message Table {
   uint64 revision = 1;

@@ -44,7 +44,9 @@ Variant references include [Yukon](https://pysolfc.sourceforge.io/doc/rules/yuko
 [Cribbage](https://www.cribbage.org/NewSite/rules/).
 
 Euchre has built-in opponents. Each seat bids, discards and plays from its own
-hand, the upcard and the cards already played, and moves without a model.
+hand, the upcard and the cards already played, and moves without a model. On
+your turn, select **Hint** or press **Ctrl+H** to see what the built-in player
+would do. The suggested card or action is marked and left for you to play.
 
 The **Settings** dialog accepts a local GGUF model for the other multiplayer
 games. The installer bundles llama.cpp. Each opponent receives its own visible

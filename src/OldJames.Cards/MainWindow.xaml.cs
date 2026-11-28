@@ -280,7 +280,8 @@ public sealed partial class MainWindow : Window
         _hint = action;
         Render();
         ActionScroll.ChangeView(null, 0, null, disableAnimation: true);
-        var source = table.Zones.First(zone => zone.Id == action.Source);
+        // Bidding choices such as Pass are buttons in the action list, not cards.
+        if (table.Zones.FirstOrDefault(zone => zone.Id == action.Source) is not { } source) return;
         var sourceCard = action.Card == 0 ? source.Cards.LastOrDefault()?.Id ?? 0 : action.Card;
         if (_targets.TryGetValue((source.Id, sourceCard), out var control))
             control.StartBringIntoView();
@@ -369,7 +370,7 @@ public sealed partial class MainWindow : Window
         Grid.SetRowSpan(ActionScroll, _game.Info.Multiplayer ? 1 : 3);
         UndoButton.IsEnabled = UndoMenu.IsEnabled = table.CanUndo;
         DealNumberMenu.IsEnabled = _solitaireDeal is not null;
-        HintButton.Visibility = _game.Info.Multiplayer ? Visibility.Collapsed : Visibility.Visible;
+        HintButton.Visibility = _game.Info.Hints ? Visibility.Visible : Visibility.Collapsed;
         HintButton.IsEnabled = HintMenu.IsEnabled = table.HintAction != 0;
         HintText.Visibility = _hint is null ? Visibility.Collapsed : Visibility.Visible;
         HintText.Text = _hint is null ? string.Empty : $"Hint: {_hint.Label}";
@@ -432,7 +433,8 @@ public sealed partial class MainWindow : Window
             var markedForDraw = canDraw && _drawCards.Contains(cardId);
             var canClick = canDraw || hasChoice || (isTop && (targetAction is not null || directAction is not null));
             var hintSource = _hint is { } hint && hint.Source == zone.Id && (hint.Card == 0 ? isTop : hint.Card == cardId);
-            var hintDestination = isTop && _hint?.Destination == zone.Id;
+            // In trick games the destination is the trick itself, so only the card is marked.
+            var hintDestination = isTop && !_game!.Info.Multiplayer && _hint?.Destination == zone.Id;
             var visual = Face(card, width, height, markedForDraw ||
                 (isTop && targetAction is not null) || _selected?.Id == cardId && cardId != 0,
                 hintSource || hintDestination);
@@ -576,6 +578,11 @@ public sealed partial class MainWindow : Window
             var text = action.Selection is not null && _drawCards.Count > 0 ? $"Draw {_drawCards.Count}" : action.Label;
             var label = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap };
             var button = new Button { Content = label, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left };
+            if (action.Id == _hint?.Id && action.Card == 0)
+            {
+                button.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
+                AutomationProperties.SetItemStatus(button, "Suggested");
+            }
             button.Click += (_, _) => Apply(action, table.Revision, false);
             Actions.Children.Add(button);
         }
