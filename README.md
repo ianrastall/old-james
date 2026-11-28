@@ -43,11 +43,14 @@ Variant references include [Yukon](https://pysolfc.sourceforge.io/doc/rules/yuko
 [TriPeaks](https://pysolfc.sourceforge.io/doc/rules/threepeaks.html), and
 [Cribbage](https://www.cribbage.org/NewSite/rules/).
 
-The **Settings** dialog accepts a local GGUF model for multiplayer. The
-installer bundles llama.cpp. Each opponent receives its own visible position,
-the selected rules, public play, and the legal actions for its current turn.
-If inference pauses, use **Resume opponent** to retry. Blackjack and solitaire
-run without a model.
+Euchre has built-in opponents. Each seat bids, discards and plays from its own
+hand, the upcard and the cards already played, and moves without a model.
+
+The **Settings** dialog accepts a local GGUF model for the other multiplayer
+games. The installer bundles llama.cpp. Each opponent receives its own visible
+position, the selected rules, public play, and the legal actions for its
+current turn. If inference pauses, use **Resume opponent** to retry. Euchre,
+Blackjack and solitaire run without a model.
 
 Each game saves its table locally after every move, including solitaire undo
 history. Select a game to return to its table. Reopening Old James returns to

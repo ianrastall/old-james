@@ -647,6 +647,12 @@ public sealed partial class MainWindow : Window
                     move = view.Actions[0];
                     await Task.Delay(120, turn.Token);
                 }
+                else if (view.AgentAction != 0)
+                {
+                    // Built-in opponents answer at once; pause so each play can be followed.
+                    move = view.Actions.First(a => a.Id == view.AgentAction);
+                    await Task.Delay(600, turn.Token);
+                }
                 else
                 {
                     if (_opponent?.IsRunning != true)

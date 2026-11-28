@@ -50,6 +50,8 @@ message Table {
   string player_view = 8;
   repeated string events = 9;
   uint32 hint_action = 10;
+  // The built-in opponent's choice for the seat to act; 0 when the game has none.
+  uint32 agent_action = 11;
 }
 message Zone {
   uint32 id = 1;

@@ -5,7 +5,9 @@ use crate::{
 };
 use serde::Deserialize;
 
-const SEATS: [&str; 4] = ["South", "West", "North", "East"];
+mod advice;
+
+pub(crate) const SEATS: [&str; 4] = ["South", "West", "North", "East"];
 const HAND: u32 = 10;
 const TRICK: u32 = 20;
 
@@ -48,7 +50,7 @@ enum Phase {
     Finished,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Move {
     Pass,
     Trump(Suit),
@@ -76,6 +78,8 @@ pub struct Game {
     exchange: Vec<Card>,
     trick: Vec<(usize, Card)>,
     last: Vec<(usize, Card)>,
+    // Every card played this deal, in order. Seats see the same public record.
+    history: Vec<(usize, Card)>,
     tricks: [i32; 2],
     counters: [i32; 2],
     meld: [i32; 2],
@@ -105,6 +109,7 @@ impl Game {
             exchange: vec![],
             trick: vec![],
             last: vec![],
+            history: vec![],
             tricks: [0; 2],
             counters: [0; 2],
             meld: [0; 2],
@@ -132,6 +137,7 @@ impl Game {
         self.bid = 0;
         self.trick.clear();
         self.last.clear();
+        self.history.clear();
         self.exchange.clear();
         self.tricks = [0; 2];
         self.counters = [0; 2];
@@ -445,6 +451,7 @@ impl Game {
         self.events
             .push(format!("{} plays {}", SEATS[self.turn], card.short()));
         self.trick.push((self.turn, card));
+        self.history.push((self.turn, card));
         self.turn = self.next(self.turn);
         if self.trick.len() != if self.alone { 3 } else { 4 } {
             return;

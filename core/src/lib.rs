@@ -219,7 +219,14 @@ impl Game {
             Self::Partnership(game) => {
                 let mut table = game.table(agent);
                 if can_act {
-                    table.actions = to_wire(game.choices());
+                    let choices = game.choices();
+                    if agent {
+                        table.agent_action = game
+                            .advise()
+                            .and_then(|advice| choices.iter().position(|c| c.op == advice))
+                            .map_or(0, |index| index as u32 + 1);
+                    }
+                    table.actions = to_wire(choices);
                 }
                 table
             }
@@ -566,6 +573,7 @@ mod tests {
                         }
                     }
                     let agent = table.agent_turn;
+                    assert_eq!(table.agent_action, 0);
                     if agent {
                         assert!(table.actions.is_empty());
                         table = engine
@@ -574,6 +582,11 @@ mod tests {
                             .table
                             .unwrap();
                         assert!(!table.actions.is_empty());
+                        let built_in = file.file_stem().unwrap() == "euchre";
+                        assert_eq!(table.agent_action != 0, built_in, "{}", file.display());
+                        if built_in {
+                            assert!(table.actions.iter().any(|a| a.id == table.agent_action));
+                        }
                     }
                     if multiplayer || table.actions.is_empty() {
                         assert_eq!(table.hint_action, 0);
